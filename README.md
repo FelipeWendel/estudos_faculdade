@@ -1,6 +1,6 @@
 # 📚 Estudos Faculdade
 
-![Python](https://img.shields.io/badge/Python-3.14.2-blue?logo=python)
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-lightgrey?logo=sqlite)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow)
@@ -17,7 +17,7 @@ Projeto em **Python + SQLite** para organizar matérias da faculdade, com export
 - Interface de menu simples no terminal
 
 ## 🛠️ Tecnologias utilizadas
-- **Python 3.14.2**
+- **Python 3.x**
 - **SQLite** (banco de dados local)
 - **Tkinter** (seleção de pastas)
 - **Pandas** (exportação para Excel `.xlsx`)
@@ -27,7 +27,7 @@ Projeto em **Python + SQLite** para organizar matérias da faculdade, com export
 ## 📂 Estrutura do projeto
 
 
-estudos_faculdade/ │── estudos/ │   ├── main.py          # Arquivo principal │   ├── materias.py      # Funções de matérias │   ├── file_manager.py  # Exportação e importação de arquivos │   ├── menu.py          # Menu principal │   ├── utils.py         # Funções auxiliares │   ├── db.py            # Banco de dados SQLite │   └── tests/           # Testes automatizados │ ├── export/              # Pasta de exportação automática ├── config.json          # Configurações do projeto ├── .gitignore           # Arquivos ignorados pelo Git ├── requirements.txt     # Dependências do projeto └── README.md            # Documentação do projeto
+estudos_faculdade/ │── estudos/ │   ├── main.py          # Arquivo principal │   ├── materias.py      # Funções de matérias │   ├── file_manager.py  # Exportação e importação de arquivos │   ├── menu.py          # Menu principal │   ├── utils.py         # Funções auxiliares │   ├── db.py            # Banco de dados SQLite │ ├── export/              # Pasta de exportação automática ├── config.json          # Configurações do projeto ├── .gitignore           # Arquivos ignorados pelo Git ├── requirements.txt     # Dependências do projeto └── README.md            # Documentação do projeto
 
 ## ⚙️ Como rodar o projeto
 1. Clone o repositório:
