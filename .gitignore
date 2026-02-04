@@ -1,0 +1,44 @@
+# --- Arquivos e pastas do Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.log
+
+# --- Ambientes virtuais ---
+venv/
+env/
+.venv/
+ENV/
+
+# --- Configurações de IDE ---
+.vscode/
+.idea/
+
+# --- Arquivos temporários ---
+*.tmp
+*.swp
+*.swo
+*.bak
+
+# --- Arquivos de sistema ---
+.DS_Store
+Thumbs.db
+
+# --- Exportações geradas pelo programa ---
+export/
+
+# --- Arquivos de banco de dados locais ---
+*.db
+*.sqlite3
+
+# --- Arquivos de relatórios ---
+*.pdf
+*.xlsx
+*.csv
+*.json
+*.txt
+*.md
