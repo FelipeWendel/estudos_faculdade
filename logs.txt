@@ -36,3 +36,5 @@
 2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
 2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
 2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt
+2026-02-04 09:49:29 Hora oficial do Brasil - INFO -  - Mensagem de teste
+2026-02-04 09:49:29 Hora oficial do Brasil - INFO -  - Teste de log extra
