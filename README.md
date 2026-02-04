@@ -1,6 +1,6 @@
 # 📚 Estudos Faculdade
 
-![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
+![Python](https://img.shields.io/badge/Python-3.14.2-blue?logo=python)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-lightgrey?logo=sqlite)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow)
@@ -17,7 +17,7 @@ Projeto em **Python + SQLite** para organizar matérias da faculdade, com export
 - Interface de menu simples no terminal
 
 ## 🛠️ Tecnologias utilizadas
-- **Python 3.x**
+- **Python 3.14.2**
 - **SQLite** (banco de dados local)
 - **Tkinter** (seleção de pastas)
 - **Pandas** (exportação para Excel `.xlsx`)
