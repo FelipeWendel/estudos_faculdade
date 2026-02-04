@@ -1,0 +1,38 @@
+2026-02-04 09:06:35 Hora oficial do Brasil - INFO - init_db - Banco inicializado com índices.
+2026-02-04 09:06:51 Hora oficial do Brasil - INFO - insert - Matéria inserida: Fundamentos de Sistemas Operacionais
+2026-02-04 09:06:51 Hora oficial do Brasil - INFO - list - Listagem de matérias realizada.
+2026-02-04 09:06:51 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo csv salvo em export\materias.csv
+2026-02-04 09:06:51 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo json salvo em export\materias.json
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo xlsx salvo em export\materias.xlsx
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - list - Listagem de matérias realizada.
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo csv salvo em export\materias.csv
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo json salvo em export\materias.json
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo xlsx salvo em export\materias.xlsx
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
+2026-02-04 09:06:52 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - insert - Matéria inserida: Lógica
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - list - Listagem de matérias realizada.
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo csv salvo em export\materias.csv
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo json salvo em export\materias.json
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo xlsx salvo em export\materias.xlsx
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - list - Listagem de matérias realizada.
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo csv salvo em export\materias.csv
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo json salvo em export\materias.json
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo xlsx salvo em export\materias.xlsx
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
+2026-02-04 09:07:09 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - list - Listagem de matérias realizada.
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo csv salvo em export\materias.csv
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo json salvo em export\materias.json
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo xlsx salvo em export\materias.xlsx
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo pdf salvo em export\materias.pdf
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo md salvo em export\materias.md
+2026-02-04 09:07:14 Hora oficial do Brasil - INFO - salvar_arquivo - Arquivo txt salvo em export\materias.txt

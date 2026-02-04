@@ -1,0 +1,4 @@
+# Exportação de Matérias
+
+- (1, 'Fundamentos de Sistemas Operacionais', 4, 4, 'C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2026/Fevereiro/Fundamentos de Sistemas Operacionais', 'fevereiro', 0)
+- (2, 'Lógica', 4, 4, 'C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2026/Fevereiro/Lógica', 'fevereiro', 0)

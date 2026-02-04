@@ -1,0 +1,15 @@
+{
+  "pastas": {
+    "livros": "livros_texto",
+    "slides": "slides_aula",
+    "outros": "outros_pdfs",
+    "word": "documentos_word",
+    "ppt": "apresentacoes_ppt",
+    "txt": "textos"
+  },
+  "extensoes": ["pdf", "docx", "pptx", "txt"],
+  "exportacao": {
+    "formatos": ["csv", "json", "xlsx", "pdf", "md", "txt"],
+    "mensagem": "As exportações são feitas automaticamente após cada operação."
+  }
+}
