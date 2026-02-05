@@ -1,20 +1,22 @@
 [
-    [
-        1,
-        "Fundamentos de Sistemas Operacionais",
-        4,
-        4,
-        "C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2026/Fevereiro/Fundamentos de Sistemas Operacionais",
-        "fevereiro",
-        0
-    ],
-    [
-        2,
-        "Lógica",
-        4,
-        4,
-        "C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2026/Fevereiro/Lógica",
-        "fevereiro",
-        0
-    ]
+    {
+        "id": 1,
+        "nome": "rfr",
+        "livros_texto": 8,
+        "slides_aula": 8,
+        "pasta_pdf": "C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2024/Outubro/Linguagem e Técnicas de Programação",
+        "mes_inicio": "janeiro",
+        "concluida": false,
+        "professor": null
+    },
+    {
+        "id": 2,
+        "nome": "Fundamentos de Sistemas Operacionais",
+        "livros_texto": 4,
+        "slides_aula": 4,
+        "pasta_pdf": "C:/Users/felip/OneDrive/Documentos/Universidade Paulista - UNIP/Matérias de 2026/Fevereiro/Fundamentos de Sistemas Operacionais",
+        "mes_inicio": "fevereiro",
+        "concluida": false,
+        "professor": null
+    }
 ]

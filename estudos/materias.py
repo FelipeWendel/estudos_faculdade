@@ -3,6 +3,7 @@ from tkinter import filedialog
 import os
 import json
 from pathlib import Path
+from datetime import datetime
 
 try:
     # Modo pacote
@@ -48,7 +49,6 @@ def escolher_pasta_pdf():
     """Abre o explorador de arquivos para o usuário escolher uma pasta em primeiro plano."""
     root = tk.Tk()
     root.withdraw()
-    # Força a janela a ficar em primeiro plano
     root.attributes("-topmost", True)
     pasta = filedialog.askdirectory(title="Selecione a pasta PDF", parent=root)
     root.destroy()
@@ -83,9 +83,14 @@ def adicionar_materia():
     escolha_mes = input_numero("Digite o número do mês (1-12):", 1, 12)
     mes = meses[escolha_mes - 1]
 
-    MateriaRepository.insert(nome, livros, slides, pasta, mes)
+    # 🔹 Registrar data/hora da criação
+    data_criacao = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Agora o insert recebe também a data_criacao
+    MateriaRepository.insert(nome, livros, slides, pasta, mes, data_criacao)
+
     exportar_tudo()
-    mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! (Mês: {mes.capitalize()})")
+    mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! (Mês: {mes.capitalize()}, Criada em: {data_criacao})")
 
 
 # -----------------------------
@@ -94,27 +99,27 @@ def adicionar_materia():
 def editar_materia():
     id_materia = input_numero("Digite o ID da matéria a editar:", 1, 9999)
     materias = MateriaRepository.list()
-    materia = next((m for m in materias if m[0] == id_materia), None)
+    materia = next((m for m in materias if m.id == id_materia), None)
 
     if not materia:
         mostrar_erro("Matéria não encontrada.")
         return
 
-    print(f"Editando matéria: {materia[1]}")
-    novo_nome = input(f"Novo nome (Enter para manter '{materia[1]}'): ").strip() or materia[1]
-    novos_livros = input(f"Nova quantidade de livros (Enter para manter {materia[2]}): ").strip()
-    novos_slides = input(f"Nova quantidade de slides (Enter para manter {materia[3]}): ").strip()
-    nova_pasta = escolher_pasta_pdf() or materia[4]
+    print(f"Editando matéria: {materia.nome}")
+    novo_nome = input(f"Novo nome (Enter para manter '{materia.nome}'): ").strip() or materia.nome
+    novos_livros = input(f"Nova quantidade de livros (Enter para manter {materia.livros_texto}): ").strip()
+    novos_slides = input(f"Nova quantidade de slides (Enter para manter {materia.slides_aula}): ").strip()
+    nova_pasta = escolher_pasta_pdf() or materia.pasta_pdf
 
     try:
-        novos_livros = int(novos_livros) if novos_livros else materia[2]
-        novos_slides = int(novos_slides) if novos_slides else materia[3]
+        novos_livros = int(novos_livros) if novos_livros else materia.livros_texto
+        novos_slides = int(novos_slides) if novos_slides else materia.slides_aula
     except ValueError:
         mostrar_erro("Valores inválidos para livros ou slides.")
         return
 
     MateriaRepository.delete(id_materia)
-    MateriaRepository.insert(novo_nome, novos_livros, novos_slides, nova_pasta, materia[5])
+    MateriaRepository.insert(novo_nome, novos_livros, novos_slides, nova_pasta, materia.mes_inicio)
     exportar_tudo()
     mostrar_sucesso(f"Matéria '{novo_nome}' (ID {id_materia}) atualizada com sucesso.")
 
@@ -132,9 +137,24 @@ def mostrar_materias(pagina=1, por_pagina=5):
     fim = inicio + por_pagina
     pagina_materias = materias[inicio:fim]
 
-    colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída"]
+    # 🔹 Agora incluímos também a coluna "Data de Conclusão"
+    colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída", "Data de Criação", "Data de Conclusão"]
+
     formatar_tabela(
-        [[m[0], m[1], m[2], m[3], m[4], m[5], "Sim" if m[6] == 1 else "Não"] for m in pagina_materias],
+        [
+            [
+                m["id"],
+                m["nome"],
+                m["livros_texto"],
+                m["slides_aula"],
+                m["pasta_pdf"],
+                m["mes_inicio"],
+                m["concluida"],
+                m["data_criacao"],
+                m["data_conclusao"] if m["data_conclusao"] else "-"
+            ]
+            for m in pagina_materias
+        ],
         colunas
     )
 
@@ -162,17 +182,31 @@ def listar_por_mes():
         if inicio in meses and fim in meses:
             idx_inicio, idx_fim = meses.index(inicio), meses.index(fim)
             intervalo = meses[idx_inicio:idx_fim+1]
-            filtradas = [m for m in materias if m[5].lower() in intervalo]
+            filtradas = [m for m in materias if m["mes_inicio"].lower() in intervalo]
     else:  # múltiplos meses
         escolhidos = [m.strip() for m in entrada.split(",")]
-        filtradas = [m for m in materias if m[5].lower() in escolhidos]
+        filtradas = [m for m in materias if m["mes_inicio"].lower() in escolhidos]
 
     if not filtradas:
         mostrar_erro(f"Nenhuma matéria encontrada para '{entrada}'.")
         return
 
-    colunas = ["ID", "Nome", "Concluída"]
-    formatar_tabela([[m[0], m[1], "Sim" if m[6] == 1 else "Não"] for m in filtradas], colunas)
+    # 🔹 Agora incluímos também a coluna "Data de Conclusão"
+    colunas = ["ID", "Nome", "Mês", "Concluída", "Data de Criação", "Data de Conclusão"]
+    formatar_tabela(
+        [
+            [
+                m["id"],
+                m["nome"],
+                m["mes_inicio"],
+                m["concluida"],
+                m["data_criacao"],
+                m["data_conclusao"] if m["data_conclusao"] else "-"
+            ]
+            for m in filtradas
+        ],
+        colunas
+    )
 
 
 # -----------------------------
@@ -183,8 +217,21 @@ def listar_concluidas():
     if not materias:
         mostrar_erro("Nenhuma matéria concluída.")
         return
-    colunas = ["ID", "Nome", "Mês"]
-    formatar_tabela([[m[0], m[1], m[5]] for m in materias], colunas)
+    # 🔹 Agora incluímos a coluna "Data de Conclusão"
+    colunas = ["ID", "Nome", "Mês", "Data de Criação", "Data de Conclusão"]
+    formatar_tabela(
+        [
+            [
+                m["id"],
+                m["nome"],
+                m["mes_inicio"],
+                m["data_criacao"],
+                m["data_conclusao"] if m["data_conclusao"] else "-"
+            ]
+            for m in materias
+        ],
+        colunas
+    )
 
 
 # -----------------------------
@@ -195,8 +242,21 @@ def listar_nao_concluidas():
     if not materias:
         mostrar_erro("Nenhuma matéria pendente.")
         return
-    colunas = ["ID", "Nome", "Mês"]
-    formatar_tabela([[m[0], m[1], m[5]] for m in materias], colunas)
+    # 🔹 Agora incluímos a coluna "Data de Conclusão" (vai aparecer vazio)
+    colunas = ["ID", "Nome", "Mês", "Data de Criação", "Data de Conclusão"]
+    formatar_tabela(
+        [
+            [
+                m["id"],
+                m["nome"],
+                m["mes_inicio"],
+                m["data_criacao"],
+                m["data_conclusao"] if m["data_conclusao"] else "-"
+            ]
+            for m in materias
+        ],
+        colunas
+    )
 
 
 # -----------------------------
@@ -205,19 +265,18 @@ def listar_nao_concluidas():
 def marcar_concluida():
     id_materia = input_numero("Digite o ID da matéria a concluir:", 1, 9999)
     materias = MateriaRepository.list()
-    materia = next((m for m in materias if m[0] == id_materia), None)
+    materia = next((m for m in materias if m["id"] == id_materia), None)
 
     if not materia:
         mostrar_erro("Matéria não encontrada.")
         return
 
-    if not confirmacao(f"Você tem certeza que deseja marcar a matéria '{materia[1]}' como concluída?"):
+    if not confirmacao(f"Você tem certeza que deseja marcar a matéria '{materia['nome']}' como concluída?"):
         mostrar_erro("Ação cancelada pelo usuário.")
         return
 
     MateriaRepository.update_concluida(id_materia, status=1)
     exportar_tudo()
-    mostrar_sucesso(f"Matéria '{materia[1]}' (ID {id_materia}) marcada como concluída.")
 
 
 # -----------------------------
@@ -226,19 +285,19 @@ def marcar_concluida():
 def remover_materia():
     id_materia = input_numero("Digite o ID da matéria a remover:", 1, 9999)
     materias = MateriaRepository.list()
-    materia = next((m for m in materias if m[0] == id_materia), None)
+    materia = next((m for m in materias if m.id == id_materia), None)
 
     if not materia:
         mostrar_erro("Matéria não encontrada.")
         return
 
-    if not confirmacao(f"Você tem certeza que deseja remover a matéria '{materia[1]}'?"):
+    if not confirmacao(f"Você tem certeza que deseja remover a matéria '{materia.nome}'?"):
         mostrar_erro("Remoção cancelada pelo usuário.")
         return
 
     MateriaRepository.delete(id_materia)
     exportar_tudo()
-    mostrar_sucesso(f"Matéria '{materia[1]}' (ID {id_materia}) removida com sucesso.")
+    mostrar_sucesso(f"Matéria '{materia.nome}' (ID {id_materia}) removida com sucesso.")
 
 
 # -----------------------------
@@ -260,15 +319,30 @@ def exportar_tudo():
 
     base_nome = normalizar_nome_arquivo("materias")
 
+    # 🔹 Ajuste: incluir Data de Conclusão nos dados exportados
+    dados_exportacao = [
+        {
+            "ID": m["id"],
+            "Nome": m["nome"],
+            "Livros": m["livros_texto"],
+            "Slides": m["slides_aula"],
+            "Pasta": m["pasta_pdf"],
+            "Mês": m["mes_inicio"],
+            "Concluída": m["concluida"],
+            "Data de Criação": m["data_criacao"],
+            "Data de Conclusão": m["data_conclusao"] if m["data_conclusao"] else "-"
+        }
+        for m in materias
+    ]
+
     # Formatos definidos no config.json
     formatos = CONFIG.get("exportacao", {}).get("formatos", [])
 
     # Exporta para todos os formatos configurados
     for formato in formatos:
-        # Se for "excel", gera extensão .xlsx
         extensao = "xlsx" if formato == "excel" else formato
         caminho = f"export/{base_nome}.{extensao}"
-        salvar_arquivo(formato, materias, caminho)
+        salvar_arquivo(formato, dados_exportacao, caminho)
 
     # Limpeza automática: remove duplicados na raiz
     duplicados = [f"{base_nome}.{ 'xlsx' if f == 'excel' else f }" for f in formatos]
@@ -280,4 +354,6 @@ def exportar_tudo():
             except Exception as e:
                 mostrar_erro(f"Erro ao remover duplicado {arquivo}: {e}")
 
-    mostrar_sucesso(f"Exportação concluída nos formatos: {', '.join(formatos)} (apenas dentro da pasta 'export').")
+    mostrar_sucesso(
+        f"Exportação concluída nos formatos: {', '.join(formatos)} (apenas dentro da pasta 'export')."
+    )

@@ -32,13 +32,50 @@ except ImportError:
 def salvar_arquivo(formato: str, dados, destino: str):
     """
     Salva dados em arquivo no formato especificado.
+    Aceita tanto listas/tuplas quanto objetos ORM Materia.
     :param formato: 'txt', 'csv', 'json', 'excel', 'xlsx', 'md', 'pdf'
-    :param dados: conteúdo a ser salvo (lista de tuplas ou strings)
+    :param dados: conteúdo a ser salvo (lista de tuplas, strings ou objetos Materia)
     :param destino: caminho do arquivo de saída
     """
     inicio = time.time()
     destino_path = Path(destino).parent / normalizar_nome_arquivo(Path(destino).name)
     destino_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 🔹 Se os dados forem objetos Materia, converte automaticamente
+    if dados and hasattr(dados[0], "__tablename__"):  # detecta objetos ORM
+        dados_lista = [
+            [
+                m.id,
+                m.nome,
+                m.livros_texto,
+                m.slides_aula,
+                m.pasta_pdf,
+                m.mes_inicio,
+                "Sim" if m.concluida else "Não",
+                m.professor or ""
+            ]
+            for m in dados
+        ]
+
+        dados_dict = [
+            {
+                "id": m.id,
+                "nome": m.nome,
+                "livros_texto": m.livros_texto,
+                "slides_aula": m.slides_aula,
+                "pasta_pdf": m.pasta_pdf,
+                "mes_inicio": m.mes_inicio,
+                "concluida": bool(m.concluida),
+                "professor": m.professor
+            }
+            for m in dados
+        ]
+
+        # Decide se usa lista ou dict dependendo do formato
+        if formato == "json":
+            dados = dados_dict
+        else:
+            dados = dados_lista
 
     try:
         if formato == "txt":
@@ -90,24 +127,17 @@ def salvar_arquivo(formato: str, dados, destino: str):
             pdf.add_page()
             pdf.set_font("Arial", size=10)
 
-            # Cabeçalho da tabela
-            colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída"]
-            larguras = [15, 40, 20, 20, 50, 25, 20]
+            colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída", "Professor"]
+            larguras = [15, 40, 20, 20, 50, 25, 20, 30]
 
             for i, col in enumerate(colunas):
-                pdf.set_fill_color(200, 200, 200)  # fundo cinza claro
+                pdf.set_fill_color(200, 200, 200)
                 pdf.cell(larguras[i], 10, col, border=1, align="C", fill=True)
             pdf.ln()
 
-            # Linhas da tabela
             for m in dados:
-                pdf.cell(larguras[0], 10, str(m[0]), border=1)
-                pdf.cell(larguras[1], 10, str(m[1])[:30], border=1)
-                pdf.cell(larguras[2], 10, str(m[2]), border=1)
-                pdf.cell(larguras[3], 10, str(m[3]), border=1)
-                pdf.cell(larguras[4], 10, str(m[4])[:40], border=1)
-                pdf.cell(larguras[5], 10, str(m[5]), border=1)
-                pdf.cell(larguras[6], 10, "Sim" if m[6] == 1 else "Não", border=1)
+                for i, valor in enumerate(m):
+                    pdf.cell(larguras[i], 10, str(valor)[:30], border=1)
                 pdf.ln()
 
             pdf.output(str(destino_path))

@@ -1,3 +1,8 @@
+from db import Base, engine
+
+# Garante que as tabelas sejam criadas no banco (MySQL/SQLite via SQLAlchemy)
+Base.metadata.create_all(bind=engine)
+
 try:
     # Modo pacote
     from estudos.materias import (
