@@ -47,12 +47,11 @@ def salvar_arquivo(formato: str, dados, destino: str):
             [
                 m.id,
                 m.nome,
-                m.livros_texto,
-                m.slides_aula,
                 m.pasta_pdf,
                 m.mes_inicio,
                 "Sim" if m.concluida else "Não",
-                m.professor or ""
+                m.professor or "",
+                ", ".join([a.nome_arquivo for a in m.arquivos]) if m.arquivos else "-"
             ]
             for m in dados
         ]
@@ -61,12 +60,11 @@ def salvar_arquivo(formato: str, dados, destino: str):
             {
                 "id": m.id,
                 "nome": m.nome,
-                "livros_texto": m.livros_texto,
-                "slides_aula": m.slides_aula,
                 "pasta_pdf": m.pasta_pdf,
                 "mes_inicio": m.mes_inicio,
                 "concluida": bool(m.concluida),
-                "professor": m.professor
+                "professor": m.professor,
+                "arquivos": [a.nome_arquivo for a in m.arquivos] if m.arquivos else []
             }
             for m in dados
         ]
@@ -127,8 +125,8 @@ def salvar_arquivo(formato: str, dados, destino: str):
             pdf.add_page()
             pdf.set_font("Arial", size=10)
 
-            colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída", "Professor"]
-            larguras = [15, 40, 20, 20, 50, 25, 20, 30]
+            colunas = ["ID", "Nome", "Pasta", "Mês", "Concluída", "Professor", "Arquivos (PDFs)"]
+            larguras = [15, 40, 50, 25, 20, 30, 50]
 
             for i, col in enumerate(colunas):
                 pdf.set_fill_color(200, 200, 200)

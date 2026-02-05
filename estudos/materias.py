@@ -137,21 +137,23 @@ def mostrar_materias(pagina=1, por_pagina=5):
     fim = inicio + por_pagina
     pagina_materias = materias[inicio:fim]
 
-    # 🔹 Agora incluímos também a coluna "Data de Conclusão"
-    colunas = ["ID", "Nome", "Livros", "Slides", "Pasta", "Mês", "Concluída", "Data de Criação", "Data de Conclusão"]
+    # 🔹 Agora incluímos também a coluna "Arquivos (PDFs)"
+    colunas = [
+        "ID", "Nome", "Pasta", "Mês", "Concluída",
+        "Data de Criação", "Data de Conclusão", "Arquivos (PDFs)"
+    ]
 
     formatar_tabela(
         [
             [
                 m["id"],
                 m["nome"],
-                m["livros_texto"],
-                m["slides_aula"],
                 m["pasta_pdf"],
                 m["mes_inicio"],
                 m["concluida"],
                 m["data_criacao"],
-                m["data_conclusao"] if m["data_conclusao"] else "-"
+                m["data_conclusao"] if m["data_conclusao"] else "-",
+                ", ".join(m["arquivos"]) if m["arquivos"] else "-"  # 🔹 lista de PDFs
             ]
             for m in pagina_materias
         ],

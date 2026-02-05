@@ -4,9 +4,9 @@ from pathlib import Path
 from datetime import datetime
 
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Boolean, DateTime, Index
+    create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey
 )
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 try:
     # Modo pacote
@@ -27,21 +27,32 @@ Base = declarative_base()
 
 
 # -----------------------------
-# Modelo de tabela
+# Modelo de tabelas
 # -----------------------------
 class Materia(Base):
     __tablename__ = "materias"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(255), nullable=False)
-    livros_texto = Column(Integer, default=0)
-    slides_aula = Column(Integer, default=0)
     pasta_pdf = Column(String(255))
     mes_inicio = Column(String(50))
     concluida = Column(Boolean, default=False)
     professor = Column(String(255))
     data_criacao = Column(DateTime, default=datetime.now)
-    data_conclusao = Column(DateTime, nullable=True)  # 🔹 nova coluna
+    data_conclusao = Column(DateTime, nullable=True)
+
+    # relação com arquivos
+    arquivos = relationship("ArquivoMateria", back_populates="materia", cascade="all, delete-orphan")
+
+
+class ArquivoMateria(Base):
+    __tablename__ = "arquivos_materia"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    materia_id = Column(Integer, ForeignKey("materias.id"))
+    nome_arquivo = Column(String(255), nullable=False)
+
+    materia = relationship("Materia", back_populates="arquivos")
 
 
 # -----------------------------
@@ -72,11 +83,9 @@ class MateriaRepository:
     """Repositório para manipulação de matérias no banco de dados."""
 
     @staticmethod
-    def insert(nome: str, livros: int, slides: int, pasta: str, mes: str):
+    def insert(nome: str, pasta: str, mes: str):
         if not nome.strip():
             raise ValueError("Nome da matéria não pode ser vazio.")
-        if livros < 0 or slides < 0:
-            raise ValueError("Livros e slides não podem ser negativos.")
         if not pasta.strip():
             raise ValueError("Caminho da pasta não pode ser vazio.")
         if not mes.strip():
@@ -86,16 +95,23 @@ class MateriaRepository:
             session = SessionLocal()
             materia = Materia(
                 nome=nome,
-                livros_texto=livros,
-                slides_aula=slides,
                 pasta_pdf=pasta,
                 mes_inicio=mes,
                 concluida=False,
             )
             session.add(materia)
             session.commit()
-            registrar_log(f"Matéria inserida: {nome}", funcao="insert")
-            mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! (Criada em {materia.data_criacao})")
+
+            # 🔹 identificar PDFs na pasta
+            arquivos_pdf = [f for f in os.listdir(pasta) if f.lower().endswith(".pdf")]
+            for arquivo in arquivos_pdf:
+                registro = ArquivoMateria(materia_id=materia.id, nome_arquivo=arquivo)
+                session.add(registro)
+
+            session.commit()
+
+            registrar_log(f"Matéria inserida: {nome} com {len(arquivos_pdf)} PDFs", funcao="insert")
+            mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! ({len(arquivos_pdf)} PDFs encontrados)")
         except Exception as e:
             registrar_log(f"Erro ao inserir matéria {nome}: {e}", tipo="ERRO", funcao="insert")
             mostrar_erro(f"Erro ao inserir matéria: {e}")
@@ -118,14 +134,13 @@ class MateriaRepository:
                 resultado.append({
                     "id": m.id,
                     "nome": m.nome,
-                    "livros_texto": m.livros_texto,
-                    "slides_aula": m.slides_aula,
                     "pasta_pdf": m.pasta_pdf,
                     "mes_inicio": m.mes_inicio,
                     "concluida": "Sim" if m.concluida else "Não",
                     "professor": m.professor,
                     "data_criacao": m.data_criacao.strftime("%Y-%m-%d %H:%M:%S") if m.data_criacao else None,
-                    "data_conclusao": m.data_conclusao.strftime("%Y-%m-%d %H:%M:%S") if m.data_conclusao else None
+                    "data_conclusao": m.data_conclusao.strftime("%Y-%m-%d %H:%M:%S") if m.data_conclusao else None,
+                    "arquivos": [a.nome_arquivo for a in m.arquivos]  # 🔹 lista de PDFs vinculados
                 })
             return resultado
 
@@ -188,9 +203,6 @@ class MateriaRepository:
 # -----------------------------
 # Backup (exportação lógica)
 # -----------------------------
-# -----------------------------
-# Backup (exportação lógica)
-# -----------------------------
 def backup_db():
     """Cria backup lógico exportando dados para CSV."""
     try:
@@ -205,11 +217,11 @@ def backup_db():
         destino = Path("backup") / f"materias_backup_{timestamp}.csv"
 
         with open(destino, "w", encoding="utf-8") as f:
-            # 🔹 Agora incluímos a coluna data_conclusao no cabeçalho
-            f.write("id,nome,livros_texto,slides_aula,pasta_pdf,mes_inicio,concluida,professor,data_criacao,data_conclusao\n")
+            f.write("id,nome,pasta_pdf,mes_inicio,concluida,professor,data_criacao,data_conclusao,arquivos\n")
             for m in materias:
+                arquivos = ";".join([a.nome_arquivo for a in m.arquivos])
                 f.write(
-                    f"{m.id},{m.nome},{m.livros_texto},{m.slides_aula},{m.pasta_pdf},{m.mes_inicio},{m.concluida},{m.professor or ''},{m.data_criacao or ''},{m.data_conclusao or ''}\n"
+                    f"{m.id},{m.nome},{m.pasta_pdf},{m.mes_inicio},{m.concluida},{m.professor or ''},{m.data_criacao or ''},{m.data_conclusao or ''},{arquivos}\n"
                 )
 
         registrar_log(f"Backup lógico criado em {destino}", funcao="backup_db")
