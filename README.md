@@ -1,7 +1,7 @@
 📘 Sistema de Gestão de Matérias — Python + MySQL
 📌 Visão Geral
 Este projeto é um sistema em Python integrado com MySQL para gerenciar matérias da faculdade.
-Ele permite cadastrar, editar, listar, concluir e exportar matérias em diversos formatos (CSV, JSON, XLSX, PDF, TXT, etc.), além de manter um histórico de criação e conclusão.
+Ele permite cadastrar, editar, listar, concluir e exportar matérias em diversos formatos (CSV, JSON, XLSX, PDF, TXT e MD.), além de manter um histórico de criação e conclusão.
 
 🚀 Funcionalidades
 - Adicionar matéria → registra nome, livros, slides, pasta PDF, mês de início e data de criação.
@@ -131,7 +131,7 @@ Exemplo de colunas exportadas:
 - Data de Conclusão
 
 🛠️ Tecnologias Utilizadas
-- Python 3.11+
+- Python 3.14.2
 - SQLAlchemy (ORM)
 - MySQL (armazenamento)
 - Tkinter (seleção de pastas)
