@@ -46,7 +46,7 @@ def salvar_arquivo(formato: str, dados, destino: str):
         dados_lista = [
             [
                 m.id,
-                m.nome,
+                f"{m.nome} ({len(m.arquivos)} PDFs)",  # Nome já com quantidade de PDFs
                 m.pasta_pdf,
                 m.mes_inicio,
                 "Sim" if m.concluida else "Não",
@@ -59,7 +59,7 @@ def salvar_arquivo(formato: str, dados, destino: str):
         dados_dict = [
             {
                 "id": m.id,
-                "nome": m.nome,
+                "nome": f"{m.nome} ({len(m.arquivos)} PDFs)",
                 "pasta_pdf": m.pasta_pdf,
                 "mes_inicio": m.mes_inicio,
                 "concluida": bool(m.concluida),
@@ -78,8 +78,13 @@ def salvar_arquivo(formato: str, dados, destino: str):
     try:
         if formato == "txt":
             with destino_path.open("w", encoding="utf-8") as f:
-                for linha in dados:
-                    f.write(str(linha) + "\n")
+                for m in dados:
+                    nome = m[1]
+                    arquivos = m[-1]
+                    f.write(f"ID: {m[0]} | Nome: {nome} | Pasta: {m[2]} | Mês: {m[3]} | "
+                            f"Concluída: {m[4]} | Professor: {m[5]}\n")
+                    f.write(f"Arquivos: {arquivos}\n")
+                    f.write("-" * 80 + "\n")
 
         elif formato == "csv":
             with destino_path.open("w", newline="", encoding="utf-8") as f:
@@ -102,8 +107,8 @@ def salvar_arquivo(formato: str, dados, destino: str):
         elif formato == "md":
             with destino_path.open("w", encoding="utf-8") as f:
                 f.write("# Exportação de Matérias\n\n")
-                for linha in dados:
-                    f.write(f"- {linha}\n")
+                for m in dados:
+                    f.write(f"- {m}\n")
 
         elif formato == "pdf":
             if FPDF is None:
@@ -125,18 +130,30 @@ def salvar_arquivo(formato: str, dados, destino: str):
             pdf.add_page()
             pdf.set_font("Arial", size=10)
 
-            colunas = ["ID", "Nome", "Pasta", "Mês", "Concluída", "Professor", "Arquivos (PDFs)"]
-            larguras = [15, 40, 50, 25, 20, 30, 50]
+            # Cabeçalho
+            colunas = ["ID", "Nome (com PDFs)", "Pasta", "Mês", "Concluída", "Professor"]
+            larguras = [15, 60, 50, 25, 20, 30]
 
             for i, col in enumerate(colunas):
                 pdf.set_fill_color(200, 200, 200)
                 pdf.cell(larguras[i], 10, col, border=1, align="C", fill=True)
             pdf.ln()
 
+            # Dados
             for m in dados:
-                for i, valor in enumerate(m):
-                    pdf.cell(larguras[i], 10, str(valor)[:30], border=1)
+                nome_com_pdfs = m[1]
+                linha = [m[0], nome_com_pdfs, m[2], m[3], m[4], m[5]]
+
+                for i, valor in enumerate(linha):
+                    pdf.cell(larguras[i], 10, str(valor)[:40], border=1)
                 pdf.ln()
+
+                # Lista de arquivos logo abaixo
+                arquivos = m[-1]
+                pdf.set_font("Arial", size=9)
+                pdf.multi_cell(0, 8, f"Arquivos: {arquivos}", border=0)
+                pdf.set_font("Arial", size=10)
+                pdf.ln(2)
 
             pdf.output(str(destino_path))
 

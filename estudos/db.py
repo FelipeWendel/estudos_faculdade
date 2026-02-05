@@ -80,8 +80,6 @@ def migrate_db():
 # Camada de repositório
 # -----------------------------
 class MateriaRepository:
-    """Repositório para manipulação de matérias no banco de dados."""
-
     @staticmethod
     def insert(nome: str, pasta: str, mes: str):
         if not nome.strip():
@@ -111,10 +109,11 @@ class MateriaRepository:
             session.commit()
 
             registrar_log(f"Matéria inserida: {nome} com {len(arquivos_pdf)} PDFs", funcao="insert")
-            mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! ({len(arquivos_pdf)} PDFs encontrados)")
+            return len(arquivos_pdf)  # 🔹 retorna a quantidade de PDFs detectados
         except Exception as e:
             registrar_log(f"Erro ao inserir matéria {nome}: {e}", tipo="ERRO", funcao="insert")
             mostrar_erro(f"Erro ao inserir matéria: {e}")
+            return 0
         finally:
             session.close()
 
@@ -217,11 +216,14 @@ def backup_db():
         destino = Path("backup") / f"materias_backup_{timestamp}.csv"
 
         with open(destino, "w", encoding="utf-8") as f:
-            f.write("id,nome,pasta_pdf,mes_inicio,concluida,professor,data_criacao,data_conclusao,arquivos\n")
+            # 🔹 Cabeçalho atualizado
+            f.write("ID,Nome,Pasta,Mês,Concluída,Professor,Data de Criação,Data de Conclusão,Arquivos (PDFs)\n")
             for m in materias:
-                arquivos = ";".join([a.nome_arquivo for a in m.arquivos])
+                arquivos = ";".join([a.nome_arquivo for a in m.arquivos]) if m.arquivos else "-"
+                nome_com_pdfs = f"{m.nome} ({len(m.arquivos)} PDFs)"
                 f.write(
-                    f"{m.id},{m.nome},{m.pasta_pdf},{m.mes_inicio},{m.concluida},{m.professor or ''},{m.data_criacao or ''},{m.data_conclusao or ''},{arquivos}\n"
+                    f"{m.id},{nome_com_pdfs},{m.pasta_pdf},{m.mes_inicio},{m.concluida},"
+                    f"{m.professor or ''},{m.data_criacao or ''},{m.data_conclusao or ''},{arquivos}\n"
                 )
 
         registrar_log(f"Backup lógico criado em {destino}", funcao="backup_db")

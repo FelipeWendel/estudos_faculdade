@@ -18,3 +18,8 @@
 2026-02-05 13:51:49 Hora oficial do Brasil - INFO - init_db - Banco MySQL inicializado com SQLAlchemy.
 2026-02-05 14:14:18 Hora oficial do Brasil - INFO - init_db - Banco MySQL inicializado com SQLAlchemy.
 2026-02-05 19:07:45 Hora oficial do Brasil - INFO - init_db - Banco MySQL inicializado com SQLAlchemy.
+2026-02-05 19:10:28 Hora oficial do Brasil - INFO - init_db - Banco MySQL inicializado com SQLAlchemy.
+2026-02-05 19:11:01 Hora oficial do Brasil - ERRO - list - Erro ao listar matérias: (pymysql.err.OperationalError) (1054, "Unknown column 'materias.pasta_pdf' in 'field list'")
+[SQL: SELECT materias.id AS materias_id, materias.nome AS materias_nome, materias.pasta_pdf AS materias_pasta_pdf, materias.mes_inicio AS materias_mes_inicio, materias.concluida AS materias_concluida, materias.professor AS materias_professor, materias.data_criacao AS materias_data_criacao, materias.data_conclusao AS materias_data_conclusao 
+FROM materias]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

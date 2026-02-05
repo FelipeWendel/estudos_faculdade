@@ -64,9 +64,6 @@ def adicionar_materia():
         mostrar_erro("Nome da matéria não pode ser vazio.")
         return
 
-    livros = input_numero("Quantidade de livros:", 0, 9999)
-    slides = input_numero("Quantidade de slides:", 0, 9999)
-
     pasta = escolher_pasta_pdf()
     if not pasta:
         mostrar_erro("Nenhuma pasta selecionada.")
@@ -86,11 +83,14 @@ def adicionar_materia():
     # 🔹 Registrar data/hora da criação
     data_criacao = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Agora o insert recebe também a data_criacao
-    MateriaRepository.insert(nome, livros, slides, pasta, mes, data_criacao)
+    # Agora o insert retorna a quantidade de PDFs detectados
+    qtd_pdfs = MateriaRepository.insert(nome, pasta, mes)
 
     exportar_tudo()
-    mostrar_sucesso(f"Matéria '{nome}' adicionada com sucesso! (Mês: {mes.capitalize()}, Criada em: {data_criacao})")
+    mostrar_sucesso(
+        f"Matéria '{nome}' adicionada com sucesso! "
+        f"(Mês: {mes.capitalize()}, Criada em: {data_criacao}, {qtd_pdfs} PDFs detectados)"
+    )
 
 
 # -----------------------------
@@ -147,13 +147,13 @@ def mostrar_materias(pagina=1, por_pagina=5):
         [
             [
                 m["id"],
-                m["nome"],
+                f"{m['nome']} ({len(m['arquivos'])} PDFs)",  # 🔹 nome + quantidade de PDFs
                 m["pasta_pdf"],
                 m["mes_inicio"],
                 m["concluida"],
                 m["data_criacao"],
                 m["data_conclusao"] if m["data_conclusao"] else "-",
-                ", ".join(m["arquivos"]) if m["arquivos"] else "-"  # 🔹 lista de PDFs
+                ", ".join(m["arquivos"]) if m["arquivos"] else "-"
             ]
             for m in pagina_materias
         ],
@@ -321,18 +321,17 @@ def exportar_tudo():
 
     base_nome = normalizar_nome_arquivo("materias")
 
-    # 🔹 Ajuste: incluir Data de Conclusão nos dados exportados
+    # 🔹 Ajuste: incluir Data de Conclusão e PDFs nos dados exportados
     dados_exportacao = [
         {
             "ID": m["id"],
-            "Nome": m["nome"],
-            "Livros": m["livros_texto"],
-            "Slides": m["slides_aula"],
+            "Nome": f"{m['nome']} ({len(m['arquivos'])} PDFs)",  # Nome + quantidade de PDFs
             "Pasta": m["pasta_pdf"],
             "Mês": m["mes_inicio"],
             "Concluída": m["concluida"],
             "Data de Criação": m["data_criacao"],
-            "Data de Conclusão": m["data_conclusao"] if m["data_conclusao"] else "-"
+            "Data de Conclusão": m["data_conclusao"] if m["data_conclusao"] else "-",
+            "Arquivos (PDFs)": ", ".join(m["arquivos"]) if m["arquivos"] else "-"
         }
         for m in materias
     ]
