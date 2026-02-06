@@ -1,4 +1,18 @@
 {
+  "idioma": "pt",
+
+  "mensagens": {
+    "sucesso": "Operação realizada com sucesso!",
+    "erro": "Ocorreu um erro inesperado.",
+    "aviso": "Atenção: verifique os dados informados."
+  },
+
+  "log": {
+    "nivel": "INFO",
+    "arquivo": "logs/sistema.log",
+    "max_size": 1048576
+  },
+
   "pastas": {
     "livros": "livros_texto",
     "slides": "slides_aula",
@@ -7,9 +21,24 @@
     "ppt": "apresentacoes_ppt",
     "txt": "textos"
   },
+
   "extensoes": ["pdf", "docx", "pptx", "txt"],
+
   "exportacao": {
     "formatos": ["csv", "json", "xlsx", "pdf", "md", "txt"],
+    "colunas": ["id", "nome", "pasta_pdf", "mes_inicio", "concluida", "professor", "arquivos"],
+    "idioma_labels": "pt",
     "mensagem": "As exportações são feitas automaticamente após cada operação."
+  },
+
+  "paginacao": {
+    "por_pagina": 5,
+    "maximo": 20
+  },
+
+  "database": {
+    "tipo": "mysql",
+    "url": "mysql+pymysql://felipe:CruzAyres2004@localhost/estudos_faculdade",
+    "test_url": "sqlite:///:memory:"
   }
 }

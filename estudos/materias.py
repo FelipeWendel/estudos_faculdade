@@ -1,14 +1,14 @@
 import tkinter as tk
 from tkinter import filedialog
 import os
-import json
-from pathlib import Path
 from datetime import datetime
+import json
+from pathlib import Path  # só se realmente usar nesse arquivo
 
 try:
     # Modo pacote
-    from estudos.db import MateriaRepository
-    from estudos.utils import (
+    from db import MateriaRepository
+    from utils import (
         mostrar_erro,
         mostrar_sucesso,
         input_numero,
@@ -16,9 +16,9 @@ try:
         confirmacao,
         formatar_tabela
     )
-    from estudos.file_manager import salvar_arquivo
+    from file_manager import exportar_tudo, salvar_arquivo
 except ImportError:
-    # Modo script isolado
+    # Modo script isolado (fallback)
     from db import MateriaRepository
     from utils import (
         mostrar_erro,
@@ -29,7 +29,6 @@ except ImportError:
         formatar_tabela
     )
     from file_manager import salvar_arquivo
-
 
 # -----------------------------
 # Carregar configuração
@@ -65,8 +64,8 @@ def adicionar_materia():
         return
 
     pasta = escolher_pasta_pdf()
-    if not pasta:
-        mostrar_erro("Nenhuma pasta selecionada.")
+    if not pasta or not os.path.isdir(pasta):
+        mostrar_erro("Pasta inválida ou inexistente.")
         return
 
     meses = [
@@ -91,6 +90,13 @@ def adicionar_materia():
         f"Matéria '{nome}' adicionada com sucesso! "
         f"(Mês: {mes.capitalize()}, Criada em: {data_criacao}, {qtd_pdfs} PDFs detectados)"
     )
+
+    # 🔹 Mostrar os nomes dos PDFs detectados
+    if qtd_pdfs > 0:
+        arquivos = [f for f in os.listdir(pasta) if f.lower().endswith(".pdf")]
+        print("Arquivos detectados:")
+        for arq in arquivos:
+            print(f" - {arq}")
 
 
 # -----------------------------
@@ -127,43 +133,48 @@ def editar_materia():
 # -----------------------------
 # Listar matérias com paginação
 # -----------------------------
-def mostrar_materias(pagina=1, por_pagina=5):
+def mostrar_materias():
     materias = MateriaRepository.list()
     if not materias:
         mostrar_erro("Nenhuma matéria cadastrada.")
         return
 
-    inicio = (pagina - 1) * por_pagina
-    fim = inicio + por_pagina
-    pagina_materias = materias[inicio:fim]
+    # 🔹 Usuário escolhe quantos registros por página
+    por_pagina = input_numero("Quantos registros por página deseja visualizar? (1-20):", 1, 20)
 
-    # 🔹 Agora incluímos também a coluna "Arquivos (PDFs)"
-    colunas = [
-        "ID", "Nome", "Pasta", "Mês", "Concluída",
-        "Data de Criação", "Data de Conclusão", "Arquivos (PDFs)"
-    ]
+    def exibir_pagina(pagina=1):
+        inicio = (pagina - 1) * por_pagina
+        fim = inicio + por_pagina
+        pagina_materias = materias[inicio:fim]
 
-    formatar_tabela(
-        [
+        colunas = [
+            "ID", "Nome", "Pasta", "Mês", "Concluída",
+            "Data de Criação", "Data de Conclusão", "Arquivos (PDFs)"
+        ]
+
+        formatar_tabela(
             [
-                m["id"],
-                f"{m['nome']} ({len(m['arquivos'])} PDFs)",  # 🔹 nome + quantidade de PDFs
-                m["pasta_pdf"],
-                m["mes_inicio"],
-                m["concluida"],
-                m["data_criacao"],
-                m["data_conclusao"] if m["data_conclusao"] else "-",
-                ", ".join(m["arquivos"]) if m["arquivos"] else "-"
-            ]
-            for m in pagina_materias
-        ],
-        colunas
-    )
+                [
+                    m["id"],
+                    f"{m['nome']} ({len(m['arquivos'])} PDFs)",
+                    m["pasta_pdf"],
+                    m["mes_inicio"],
+                    m["concluida"],
+                    m["data_criacao"],
+                    m["data_conclusao"] if m["data_conclusao"] else "-",
+                    ", ".join(m["arquivos"]) if m["arquivos"] else "-"
+                ]
+                for m in pagina_materias
+            ],
+            colunas
+        )
 
-    if fim < len(materias):
-        print("\nDigite 'n' para próxima página ou Enter para sair.")
-        if input().strip().lower() == "n":
-            mostrar_materias(pagina + 1, por_pagina)
+        if fim < len(materias):
+            print("\nDigite 'n' para próxima página ou Enter para sair.")
+            if input().strip().lower() == "n":
+                exibir_pagina(pagina + 1)
+
+    exibir_pagina()
 
 
 # -----------------------------
@@ -193,13 +204,12 @@ def listar_por_mes():
         mostrar_erro(f"Nenhuma matéria encontrada para '{entrada}'.")
         return
 
-    # 🔹 Agora incluímos também a coluna "Data de Conclusão"
     colunas = ["ID", "Nome", "Mês", "Concluída", "Data de Criação", "Data de Conclusão"]
     formatar_tabela(
         [
             [
                 m["id"],
-                m["nome"],
+                f"{m['nome']} ({len(m['arquivos'])} PDFs)",
                 m["mes_inicio"],
                 m["concluida"],
                 m["data_criacao"],
@@ -219,13 +229,13 @@ def listar_concluidas():
     if not materias:
         mostrar_erro("Nenhuma matéria concluída.")
         return
-    # 🔹 Agora incluímos a coluna "Data de Conclusão"
+
     colunas = ["ID", "Nome", "Mês", "Data de Criação", "Data de Conclusão"]
     formatar_tabela(
         [
             [
                 m["id"],
-                m["nome"],
+                f"{m['nome']} ({len(m['arquivos'])} PDFs)",
                 m["mes_inicio"],
                 m["data_criacao"],
                 m["data_conclusao"] if m["data_conclusao"] else "-"
@@ -244,13 +254,13 @@ def listar_nao_concluidas():
     if not materias:
         mostrar_erro("Nenhuma matéria pendente.")
         return
-    # 🔹 Agora incluímos a coluna "Data de Conclusão" (vai aparecer vazio)
+
     colunas = ["ID", "Nome", "Mês", "Data de Criação", "Data de Conclusão"]
     formatar_tabela(
         [
             [
                 m["id"],
-                m["nome"],
+                f"{m['nome']} ({len(m['arquivos'])} PDFs)",
                 m["mes_inicio"],
                 m["data_criacao"],
                 m["data_conclusao"] if m["data_conclusao"] else "-"
