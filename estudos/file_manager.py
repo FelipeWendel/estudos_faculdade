@@ -35,10 +35,9 @@ CONFIG = carregar_config()
 LANG = CONFIG.get("idioma", "pt")  # "pt" ou "en"
 
 LABELS = {
-    "pt": ["ID", "Nome", "Pasta", "Mês", "Concluída", "Professor", "Arquivos (PDFs)"],
-    "en": ["ID", "Name", "Folder", "Month", "Completed", "Professor", "Files (PDFs)"]
+    "pt": ["ID", "Nome", "Pasta", "Mês", "Concluída", "Arquivos (PDFs)"],
+    "en": ["ID", "Name", "Folder", "Month", "Completed", "Files (PDFs)"]
 }
-
 
 # -----------------------------
 # Exportação modular
@@ -48,15 +47,16 @@ def export_csv(dados, destino, colunas):
         with open(destino, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(colunas)
-            writer.writerows(dados)
+            for m in dados:
+                if isinstance(m, dict):
+                    arquivos = ", ".join(m.get("arquivos", [])) or "-"
+                    writer.writerow([m.get("id"), m.get("nome"), m.get("pasta_pdf"),
+                                     m.get("mes_inicio"), m.get("concluida"), arquivos])
+                else:
+                    writer.writerow(m)
         mostrar_sucesso(f"CSV exportado em: {destino}")
-    except PermissionError:
-        mostrar_erro("Sem permissão para salvar o arquivo CSV.")
-    except OSError as e:
-        if "No space" in str(e):
-            mostrar_erro("Disco cheio ao salvar CSV.")
-        else:
-            mostrar_erro(f"Erro ao salvar CSV: {e}")
+    except Exception as e:
+        mostrar_erro(f"Erro ao salvar CSV: {e}")
 
 
 def export_json(dados, destino):
@@ -71,11 +71,17 @@ def export_json(dados, destino):
 def export_excel(dados, destino):
     try:
         import pandas as pd
-        df = pd.DataFrame(dados)
+        linhas = []
+        for m in dados:
+            if isinstance(m, dict):
+                arquivos = ", ".join(m.get("arquivos", [])) or "-"
+                linhas.append([m.get("id"), m.get("nome"), m.get("pasta_pdf"),
+                               m.get("mes_inicio"), m.get("concluida"), arquivos])
+            else:
+                linhas.append(m)
+        df = pd.DataFrame(linhas, columns=LABELS.get(LANG, LABELS["pt"]))
         df.to_excel(destino, index=False)
         mostrar_sucesso(f"Excel exportado em: {destino}")
-    except ImportError:
-        mostrar_erro("Biblioteca pandas não encontrada para exportar Excel.")
     except Exception as e:
         mostrar_erro(f"Erro ao salvar Excel: {e}")
 
@@ -84,11 +90,15 @@ def export_txt(dados, destino, colunas):
     try:
         with open(destino, "w", encoding="utf-8") as f:
             for m in dados:
-                nome = m[1]
-                arquivos = m[-1]
-                f.write(f"ID: {m[0]} | Nome: {nome} | Pasta: {m[2]} | Mês: {m[3]} | "
-                        f"Concluída: {m[4]} | Professor: {m[5]}\n")
-                f.write(f"Arquivos: {arquivos}\n")
+                if isinstance(m, dict):
+                    arquivos = ", ".join(m.get("arquivos", [])) or "-"
+                    f.write(f"ID: {m.get('id')} | Nome: {m.get('nome')} | Pasta: {m.get('pasta_pdf')} | "
+                            f"Mês: {m.get('mes_inicio')} | Concluída: {m.get('concluida')}\n")
+                    f.write(f"Arquivos: {arquivos}\n")
+                else:
+                    arquivos = m[-1] if len(m) > 5 else "-"
+                    f.write(f"ID: {m[0]} | Nome: {m[1]} | Pasta: {m[2]} | Mês: {m[3]} | Concluída: {m[4]}\n")
+                    f.write(f"Arquivos: {arquivos}\n")
                 f.write("-" * 80 + "\n")
         mostrar_sucesso(f"TXT exportado em: {destino}")
     except Exception as e:
@@ -117,26 +127,27 @@ def export_pdf(dados, destino, colunas):
         pdf.add_page()
         pdf.set_font("Arial", size=10)
 
-        larguras = [15, 60, 50, 25, 25, 40, 60]
+        larguras = [15, 60, 50, 25, 25, 60]
 
+        # Cabeçalho
         for i, col in enumerate(colunas):
             pdf.set_fill_color(200, 200, 200)
             pdf.cell(larguras[i], 10, col, border=1, align="C", fill=True)
         pdf.ln()
 
+        # Dados
         for m in dados:
-            nome_com_pdfs = m[1]
-            linha = [m[0], nome_com_pdfs, m[2], m[3], m[4], m[5]]
+            if isinstance(m, dict):
+                arquivos = ", ".join(m.get("arquivos", [])) or "-"
+                linha = [m.get("id"), m.get("nome"), m.get("pasta_pdf"),
+                         m.get("mes_inicio"), m.get("concluida"), arquivos]
+            else:
+                arquivos = m[-1] if len(m) > 5 else "-"
+                linha = [m[0], m[1], m[2], m[3], m[4], arquivos]
 
             for i, valor in enumerate(linha):
                 pdf.cell(larguras[i], 10, str(valor)[:40], border=1)
             pdf.ln()
-
-            arquivos = m[-1]
-            pdf.set_font("Arial", size=9)
-            pdf.multi_cell(0, 8, f"Arquivos: {arquivos}", border=0)
-            pdf.set_font("Arial", size=10)
-            pdf.ln(2)
 
         pdf.output(str(destino))
         mostrar_sucesso(f"PDF exportado em: {destino}")
@@ -144,15 +155,31 @@ def export_pdf(dados, destino, colunas):
         mostrar_erro(f"Erro ao salvar PDF: {e}")
 
 
+def export_md(dados, destino, colunas):
+    try:
+        with open(destino, "w", encoding="utf-8") as f:
+            f.write("| " + " | ".join(colunas) + " |\n")
+            f.write("|" + " --- |" * len(colunas) + "\n")
+            for m in dados:
+                if isinstance(m, dict):
+                    arquivos = ", ".join(m.get("arquivos", [])) or "-"
+                    linha = [m.get("id"), m.get("nome"), m.get("pasta_pdf"),
+                             m.get("mes_inicio"), m.get("concluida"), arquivos]
+                else:
+                    arquivos = m[-1] if len(m) > 5 else "-"
+                    linha = [m[0], m[1], m[2], m[3], m[4], arquivos]
+                f.write("| " + " | ".join(str(c) for c in linha) + " |\n")
+        mostrar_sucesso(f"Markdown exportado em: {destino}")
+    except Exception as e:
+        mostrar_erro(f"Erro ao salvar Markdown: {e}")
+
+
 # -----------------------------
 # Função principal de exportação
 # -----------------------------
 def salvar_arquivo(formato: str, dados, destino: str):
-    """
-    Salva dados em arquivo no formato especificado.
-    """
     inicio = time.time()
-    destino_path = Path(destino).parent / normalizar_nome_arquivo(Path(destino).name)
+    destino_path = Path(destino)
     destino_path.parent.mkdir(parents=True, exist_ok=True)
 
     colunas = LABELS.get(LANG, LABELS["pt"])
@@ -168,6 +195,8 @@ def salvar_arquivo(formato: str, dados, destino: str):
             export_txt(dados, destino_path, colunas)
         elif formato == "pdf":
             export_pdf(dados, destino_path, colunas)
+        elif formato == "md":
+            export_md(dados, destino_path, colunas)
         else:
             mostrar_erro(f"Formato não suportado: {formato}")
             return

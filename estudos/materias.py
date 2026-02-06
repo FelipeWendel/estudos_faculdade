@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import json
 from pathlib import Path  # só se realmente usar nesse arquivo
+from db import session, MateriaRepository
 
 try:
     # Modo pacote
@@ -295,21 +296,39 @@ def marcar_concluida():
 # Remover matéria (com confirmação)
 # -----------------------------
 def remover_materia():
-    id_materia = input_numero("Digite o ID da matéria a remover:", 1, 9999)
-    materias = MateriaRepository.list()
-    materia = next((m for m in materias if m.id == id_materia), None)
+    try:
+        print("\n=== Remover Matéria ===")
+        print("1 - Remover uma matéria específica")
+        print("2 - Remover TODAS as matérias")
+        escolha = input("Digite sua escolha (1 ou 2): ").strip()
 
-    if not materia:
-        mostrar_erro("Matéria não encontrada.")
-        return
+        if escolha == "1":
+            materia_id = int(input("Digite o ID da matéria a remover: "))
+            confirm = input(f"Tem certeza que deseja remover a matéria ID {materia_id}? (s/n): ").strip().lower()
+            if confirm == "s":
+                materia = MateriaRepository.get(materia_id)
+                if materia:
+                    session.delete(materia)
+                    session.commit()
+                    print(f"Matéria {materia_id} removida com sucesso!")
+                else:
+                    print("Matéria não encontrada.")
+            else:
+                print("Operação cancelada. Nenhuma matéria foi removida.")
 
-    if not confirmacao(f"Você tem certeza que deseja remover a matéria '{materia.nome}'?"):
-        mostrar_erro("Remoção cancelada pelo usuário.")
-        return
+        elif escolha == "2":
+            confirm = input("Tem certeza que deseja remover TODAS as matérias? (s/n): ").strip().lower()
+            if confirm == "s":
+                MateriaRepository.delete_all()
+                print("Todas as matérias foram removidas com sucesso!")
+            else:
+                print("Operação cancelada. Nenhuma matéria foi removida.")
 
-    MateriaRepository.delete(id_materia)
-    exportar_tudo()
-    mostrar_sucesso(f"Matéria '{materia.nome}' (ID {id_materia}) removida com sucesso.")
+        else:
+            print("Opção inválida.")
+
+    except Exception as e:
+        print(f"[ERRO] Ocorreu um erro inesperado ao remover matéria: {e}")
 
 
 # -----------------------------

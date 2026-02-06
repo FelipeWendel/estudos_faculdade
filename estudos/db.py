@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from datetime import datetime
+import csv
+import json
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Index
@@ -9,6 +11,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 from utils import registrar_log, mostrar_erro, mostrar_sucesso
 
+# -----------------------------
+# Configuração do banco
+# -----------------------------
 DATABASE_URL = "mysql+pymysql://felipe:CruzAyres2004@localhost/estudos_faculdade"
 
 engine = create_engine(DATABASE_URL, echo=False, future=True)
@@ -27,7 +32,6 @@ class Materia(Base):
     pasta_pdf = Column(String(255), nullable=False)
     mes_inicio = Column(String(50), nullable=False)
     concluida = Column(Boolean, default=False, nullable=False, index=True)
-    professor = Column(String(255), nullable=True)
     data_criacao = Column(DateTime, default=datetime.now, nullable=False)
     data_conclusao = Column(DateTime, nullable=True)
 
@@ -104,7 +108,7 @@ class MateriaRepository:
                 session.commit()
 
                 registrar_log(f"Matéria inserida: {nome} com {len(arquivos_pdf)} PDFs", funcao="insert")
-                return len(arquivos_pdf)  # 🔹 retorna a quantidade de PDFs detectados
+                return len(arquivos_pdf)
         except Exception as e:
             registrar_log(f"Erro ao inserir matéria {nome}: {e}", tipo="ERRO", funcao="insert")
             mostrar_erro(f"Erro ao inserir matéria: {e}")
@@ -129,15 +133,25 @@ class MateriaRepository:
                         "pasta_pdf": m.pasta_pdf,
                         "mes_inicio": m.mes_inicio,
                         "concluida": "Sim" if m.concluida else "Não",
-                        "professor": m.professor,
-                        "data_criacao": m.data_criacao.strftime("%Y-%m-%d %H:%M:%S") if m.data_criacao else None,
-                        "data_conclusao": m.data_conclusao.strftime("%Y-%m-%d %H:%M:%S") if m.data_conclusao else None,
+                        "data_criacao": m.data_criacao.strftime("%Y-%m-%d %H:%M:%S") if m.data_criacao else "",
+                        "data_conclusao": m.data_conclusao.strftime("%Y-%m-%d %H:%M:%S") if m.data_conclusao else "",
                         "arquivos": [a.nome_arquivo for a in m.arquivos]
                     })
                 return resultado
         except Exception as e:
             registrar_log(f"Erro ao listar matérias: {e}", tipo="ERRO", funcao="list")
             return []
+
+    @staticmethod
+    def get(id_materia: int):
+        """Busca uma matéria pelo ID"""
+        try:
+            with SessionLocal() as session:
+                materia = session.query(Materia).filter(Materia.id == id_materia).first()
+                return materia
+        except Exception as e:
+            registrar_log(f"Erro ao buscar matéria ID {id_materia}: {e}", tipo="ERRO", funcao="get")
+            return None
 
     @staticmethod
     def update_concluida(id_materia: int, status: int = 1):
@@ -161,37 +175,21 @@ class MateriaRepository:
             mostrar_erro(f"Erro ao atualizar matéria: {e}")
 
     @staticmethod
-    def delete(id_materia: int):
-        try:
-            with SessionLocal() as session:
-                materia = session.query(Materia).filter(Materia.id == id_materia).first()
-                if materia:
-                    session.delete(materia)
-                    session.commit()
-                    registrar_log(f"Matéria ID {id_materia} removida.", funcao="delete")
-        except Exception as e:
-            registrar_log(f"Erro ao remover matéria ID {id_materia}: {e}", tipo="ERRO", funcao="delete")
-
-    @staticmethod
     def delete_all():
         try:
             with SessionLocal() as session:
-                session.query(Materia).delete()
+                materias = session.query(Materia).all()
+                for m in materias:
+                    session.delete(m)  # respeita o cascade
                 session.commit()
                 registrar_log("Todas as matérias removidas.", funcao="delete_all")
         except Exception as e:
             registrar_log(f"Erro ao remover todas as matérias: {e}", tipo="ERRO", funcao="delete_all")
 
-    # 🔹 Métodos adicionais
     @staticmethod
     def buscar_por_mes(mes: str):
         with SessionLocal() as session:
             return session.query(Materia).filter(Materia.mes_inicio == mes).all()
-
-    @staticmethod
-    def buscar_por_professor(nome_professor: str):
-        with SessionLocal() as session:
-            return session.query(Materia).filter(Materia.professor.ilike(f"%{nome_professor}%")).all()
 
     @staticmethod
     def buscar_por_periodo(inicio: datetime, fim: datetime):
@@ -202,34 +200,102 @@ class MateriaRepository:
 
 
 # -----------------------------
-# Backup (exportação lógica)
+# Exportação completa (CSV, JSON, TXT, MD, PDF, XLSX)
 # -----------------------------
-def backup_db():
-    """Cria backup lógico exportando dados para CSV."""
+def exportar_tudo():
     try:
-        with SessionLocal() as session:
-            materias = session.query(Materia).all()
-            if not materias:
-                mostrar_erro("Nenhuma matéria encontrada para backup.")
-                return
+        materias = MateriaRepository.list()
+        if not materias:
+            mostrar_erro("Nenhuma matéria encontrada para exportação.")
+            return
 
-            os.makedirs("backup", exist_ok=True)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            destino = Path("backup") / f"materias_backup_{timestamp}.csv"
+        os.makedirs("export", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 
-            with open(destino, "w", encoding="utf-8") as f:
-                # 🔹 Cabeçalho atualizado
-                f.write("ID,Nome,Pasta,Mês,Concluída,Professor,Data de Criação,Data de Conclusão,Arquivos (PDFs)\n")
-                for m in materias:
-                    arquivos = ";".join([a.nome_arquivo for a in m.arquivos]) if m.arquivos else "-"
-                    nome_com_pdfs = f"{m.nome} ({len(m.arquivos)} PDFs)"
-                    f.write(
-                        f"{m.id},{nome_com_pdfs},{m.pasta_pdf},{m.mes_inicio},{m.concluida},"
-                        f"{m.professor or ''},{m.data_criacao or ''},{m.data_conclusao or ''},{arquivos}\n"
-                    )
+        # CSV
+        destino_csv = Path("export") / "materias.csv"
+        with open(destino_csv, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=materias[0].keys())
+            writer.writeheader()
+            writer.writerows(materias)
 
-            registrar_log(f"Backup lógico criado em {destino}", funcao="backup_db")
-            mostrar_sucesso(f"Backup criado em: {destino}")
+        # JSON
+        destino_json = Path("export") / "materias.json"
+        with open(destino_json, "w", encoding="utf-8") as f:
+            json.dump(materias, f, ensure_ascii=False, indent=4)
+
+        # TXT
+        destino_txt = Path("export") / "materias.txt"
+        with open(destino_txt, "w", encoding="utf-8") as f:
+            for m in materias:
+                f.write(
+                    f"ID: {m['id']} | Nome: {m['nome']} | Pasta: {m['pasta_pdf']} | "
+                    f"Mês: {m['mes_inicio']} | Concluída: {m['concluida']}\n"
+                    f"Data de Criação: {m['data_criacao']} | Data de Conclusão: {m['data_conclusao']}\n"
+                    f"Arquivos: {', '.join(m['arquivos']) if m['arquivos'] else '-'}\n"
+                    "------------------------------------------------------------\n"
+                )
+
+        # MD (Markdown)
+        destino_md = Path("export") / "materias.md"
+        with open(destino_md, "w", encoding="utf-8") as f:
+            f.write("| ID | Nome | Pasta | Mês | Concluída | Data Criação | Data Conclusão | Arquivos (PDFs) |\n")
+            f.write("| --- | --- | --- | --- | --- | --- | --- | --- |\n")
+            for m in materias:
+                arquivos = "; ".join(m["arquivos"]) if m["arquivos"] else "-"
+                f.write(
+                    f"| {m['id']} | {m['nome']} | {m['pasta_pdf']} | {m['mes_inicio']} | "
+                    f"{m['concluida']} | {m['data_criacao']} | {m['data_conclusao']} | {arquivos} |\n"
+                )
+
+        # PDF
+        try:
+            from fpdf import FPDF
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.cell(200, 10, txt=f"Relatório de Matérias - {timestamp}", ln=True, align="C")
+            for m in materias:
+                pdf.multi_cell(0, 10,
+                    f"ID: {m['id']} | Nome: {m['nome']} | Pasta: {m['pasta_pdf']} | "
+                    f"Mês: {m['mes_inicio']} | Concluída: {m['concluida']}\n"
+                    f"Data de Criação: {m['data_criacao']} | Data de Conclusão: {m['data_conclusao']}\n"
+                    f"Arquivos: {', '.join(m['arquivos']) if m['arquivos'] else '-'}\n"
+                    "------------------------------------------------------------\n"
+                )
+            pdf.output(str(Path("export") / "materias.pdf"))
+        except ImportError:
+            mostrar_erro("Biblioteca fpdf não instalada. Instale com: pip install fpdf")
+
+        # XLSX
+        try:
+            import openpyxl
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.append(list(materias[0].keys()))
+            for m in materias:
+                # garantir que todos os valores sejam strings
+                ws.append([str(v) if v is not None else "" for v in m.values()])
+            wb.save(str(Path("export") / "materias.xlsx"))
+        except ImportError:
+            mostrar_erro("Biblioteca openpyxl não instalada. Instale com: pip install openpyxl")
+
+        mostrar_sucesso("Exportação concluída nos formatos: csv, json, txt, md, pdf, xlsx (pasta 'export').")
+
     except Exception as e:
-        registrar_log(f"Erro ao criar backup: {e}", tipo="ERRO", funcao="backup_db")
-        mostrar_erro("Falha ao criar backup do banco.")
+        registrar_log(f"Erro ao exportar matérias: {e}", tipo="ERRO", funcao="exportar_tudo")
+        mostrar_erro("Falha ao exportar matérias.")
+
+
+# -----------------------------
+# Sessão global (para importação direta)
+# -----------------------------
+
+# 🔹 Limpa qualquer metadado antigo que possa estar em cache
+Base.metadata.clear()
+
+# 🔹 Recria todas as tabelas conforme o modelo atual
+Base.metadata.create_all(bind=engine)
+
+# 🔹 Cria uma sessão global para importação direta
+session = SessionLocal()

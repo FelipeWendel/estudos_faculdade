@@ -51,6 +51,7 @@ class LogLevel(Enum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
+    ERRO = "ERROR"   # alias em português
     SUCCESS = "SUCCESS"
 
 LOG_LEVEL = LogLevel.INFO  # nível padrão
@@ -91,6 +92,10 @@ def registrar_log(msg: str, tipo: str = "INFO", funcao: str = "", arquivo: str =
     """Registra log no console e em arquivo com níveis e rotação."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # Aceita tanto "ERRO" quanto "ERROR"
+    if tipo.upper() == "ERRO":
+        tipo = "ERROR"
+
     cores = {
         "DEBUG": Fore.CYAN,
         "INFO": Fore.BLUE,
@@ -98,13 +103,16 @@ def registrar_log(msg: str, tipo: str = "INFO", funcao: str = "", arquivo: str =
         "ERROR": Fore.RED,
         "SUCCESS": Fore.GREEN,
     }
-    prefixo = cores.get(tipo, Fore.WHITE) + f"[{tipo}]" + Style.RESET_ALL
+    prefixo = cores.get(tipo.upper(), Fore.WHITE) + f"[{tipo.upper()}]" + Style.RESET_ALL
     mensagem = f"{prefixo} ({funcao}) {msg}" if funcao else f"{prefixo} {msg}"
 
     # Exibe no console apenas se nível >= configurado
     niveis = list(LogLevel)
-    if niveis.index(LogLevel[tipo]) >= niveis.index(LOG_LEVEL):
-        print(mensagem)
+    try:
+        if niveis.index(LogLevel[tipo.upper()]) >= niveis.index(LOG_LEVEL):
+            print(mensagem)
+    except KeyError:
+        print(f"{Fore.RED}[LOG] Tipo inválido: {tipo}{Style.RESET_ALL}")
 
     # Rotação de arquivo
     log_path = Path(arquivo)
@@ -113,7 +121,7 @@ def registrar_log(msg: str, tipo: str = "INFO", funcao: str = "", arquivo: str =
         os.rename(arquivo, backup_name)
 
     with log_path.open("a", encoding="utf-8") as f:
-        f.write(f"{timestamp} - {tipo} - {funcao} - {msg}\n")
+        f.write(f"{timestamp} - {tipo.upper()} - {funcao} - {msg}\n")
 
 # -----------------------------
 # Input validado

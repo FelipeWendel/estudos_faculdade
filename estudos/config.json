@@ -26,7 +26,7 @@
 
   "exportacao": {
     "formatos": ["csv", "json", "xlsx", "pdf", "md", "txt"],
-    "colunas": ["id", "nome", "pasta_pdf", "mes_inicio", "concluida", "professor", "arquivos"],
+    "colunas": ["id", "nome", "pasta_pdf", "mes_inicio", "concluida", "arquivos"],
     "idioma_labels": "pt",
     "mensagem": "As exportações são feitas automaticamente após cada operação."
   },
