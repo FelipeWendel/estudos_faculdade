@@ -4,31 +4,17 @@
   "mensagens": {
     "sucesso": "Operação realizada com sucesso!",
     "erro": "Ocorreu um erro inesperado.",
-    "aviso": "Atenção: verifique os dados informados."
+    "aviso": "Atenção: verifique os dados informados.",
+    "confirmacao": "Deseja confirmar esta ação crítica?",
+    "nenhum_dado": "Nenhum dado para exibir.",
+    "entrada_invalida": "Entrada inválida. Digite apenas números.",
+    "fora_intervalo": "Digite um número entre {min} e {max}."
   },
 
   "log": {
     "nivel": "INFO",
     "arquivo": "logs/sistema.log",
     "max_size": 1048576
-  },
-
-  "pastas": {
-    "livros": "livros_texto",
-    "slides": "slides_aula",
-    "outros": "outros_pdfs",
-    "word": "documentos_word",
-    "ppt": "apresentacoes_ppt",
-    "txt": "textos"
-  },
-
-  "extensoes": ["pdf", "docx", "pptx", "txt"],
-
-  "exportacao": {
-    "formatos": ["csv", "json", "xlsx", "pdf", "md", "txt"],
-    "colunas": ["id", "nome", "pasta_pdf", "mes_inicio", "concluida", "arquivos"],
-    "idioma_labels": "pt",
-    "mensagem": "As exportações são feitas automaticamente após cada operação."
   },
 
   "paginacao": {
