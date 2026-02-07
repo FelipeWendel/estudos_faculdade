@@ -2,7 +2,7 @@ import sys
 import argparse
 from db import Base, engine
 
-# Garante que as tabelas sejam criadas no banco (MySQL/SQLite via SQLAlchemy)
+# Garante que as tabelas sejam criadas no banco (MySQL via SQLAlchemy)
 Base.metadata.create_all(bind=engine)
 
 try:
@@ -15,7 +15,6 @@ try:
         listar_nao_concluidas,
         marcar_concluida,
         remover_materia,
-        exportar_tudo,
         editar_materia
     )
     from utils import mostrar_erro, input_numero, registrar_log, mostrar_sucesso
@@ -31,7 +30,6 @@ except ImportError:
         listar_nao_concluidas,
         marcar_concluida,
         remover_materia,
-        exportar_tudo,
         editar_materia
     )
     from utils import mostrar_erro, input_numero, registrar_log, mostrar_sucesso
@@ -65,7 +63,6 @@ def main():
 
             if acao == "add":
                 adicionar_materia()
-                exportar_tudo()
             elif acao == "show":
                 mostrar_materias()
             elif acao == "list_month":
@@ -76,16 +73,12 @@ def main():
                 listar_nao_concluidas()
             elif acao == "mark_done":
                 marcar_concluida()
-                exportar_tudo()
             elif acao == "edit":
                 editar_materia()
-                exportar_tudo()
             elif acao == "remove":
                 remover_materia()
-                exportar_tudo()
             elif acao == "exit":
                 print("\033[91mSaindo...\033[0m")
-                exportar_tudo()
                 break
             elif acao == "help":
                 mostrar_ajuda()
@@ -110,7 +103,6 @@ def cli():
     parser.add_argument("--adicionar", action="store_true", help="Adicionar uma nova matéria")
     parser.add_argument("--concluidas", action="store_true", help="Listar matérias concluídas")
     parser.add_argument("--nao-concluidas", action="store_true", help="Listar matérias não concluídas")
-    parser.add_argument("--exportar", action="store_true", help="Exportar todas as matérias")
 
     args = parser.parse_args()
 
@@ -120,13 +112,10 @@ def cli():
         mostrar_materias()
     elif args.adicionar:
         adicionar_materia()
-        exportar_tudo()
     elif args.concluidas:
         listar_concluidas()
     elif args.nao_concluidas:
         listar_nao_concluidas()
-    elif args.exportar:
-        exportar_tudo()
     else:
         # Se não passar argumentos, roda o fluxo normal (menu interativo)
         main()

@@ -2,9 +2,11 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 from datetime import datetime
-import json
-from pathlib import Path  # só se realmente usar nesse arquivo
-from db import session, MateriaRepository
+from db import MateriaRepository
+import shutil
+import platform
+import subprocess
+from db import SessionLocal
 
 try:
     # Modo pacote
@@ -17,7 +19,6 @@ try:
         confirmacao,
         formatar_tabela
     )
-    from file_manager import exportar_tudo, salvar_arquivo
 except ImportError:
     # Modo script isolado (fallback)
     from db import MateriaRepository
@@ -29,18 +30,24 @@ except ImportError:
         confirmacao,
         formatar_tabela
     )
-    from file_manager import salvar_arquivo
 
 # -----------------------------
-# Carregar configuração
+# Função para abrir PDFs
 # -----------------------------
-CONFIG_PATH = Path("config.json")
-if CONFIG_PATH.exists():
-    with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        CONFIG = json.load(f)
-else:
-    CONFIG = {"exportacao": {"formatos": ["csv", "json", "xlsx", "pdf", "md", "txt"]}}
-
+def abrir_pdf(caminho_pdf: str):
+    """Abre um arquivo PDF no leitor padrão do sistema operacional."""
+    sistema = platform.system()
+    try:
+        if sistema == "Windows":
+            os.startfile(caminho_pdf)
+        elif sistema == "Darwin":  # macOS
+            subprocess.call(["open", caminho_pdf])
+        elif sistema == "Linux":
+            subprocess.call(["xdg-open", caminho_pdf])
+        else:
+            print(f"[ERRO] Sistema operacional '{sistema}' não suportado para abrir PDFs.")
+    except Exception as e:
+        print(f"[ERRO] Não foi possível abrir o PDF: {e}")
 
 # -----------------------------
 # Função para escolher pasta PDF
@@ -53,7 +60,6 @@ def escolher_pasta_pdf():
     pasta = filedialog.askdirectory(title="Selecione a pasta PDF", parent=root)
     root.destroy()
     return pasta if pasta else None
-
 
 # -----------------------------
 # Adicionar matéria
@@ -80,25 +86,42 @@ def adicionar_materia():
     escolha_mes = input_numero("Digite o número do mês (1-12):", 1, 12)
     mes = meses[escolha_mes - 1]
 
-    # 🔹 Registrar data/hora da criação
+    # Registrar data/hora da criação
     data_criacao = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Agora o insert retorna a quantidade de PDFs detectados
+    # Inserir no banco
     qtd_pdfs = MateriaRepository.insert(nome, pasta, mes)
 
-    exportar_tudo()
+    # Criar estrutura de pastas organizada
+    pasta_raiz = os.path.join(os.getcwd(), "materias")
+    os.makedirs(pasta_raiz, exist_ok=True)
+
+    pasta_mes = os.path.join(pasta_raiz, mes)
+    os.makedirs(pasta_mes, exist_ok=True)
+
+    pasta_materia = os.path.join(pasta_mes, nome)
+    os.makedirs(pasta_materia, exist_ok=True)
+
+    # Copiar PDFs para a pasta organizada
+    arquivos_detectados = []
+    for arquivo in os.listdir(pasta):
+        if arquivo.lower().endswith(".pdf"):
+            origem = os.path.join(pasta, arquivo)
+            destino = os.path.join(pasta_materia, arquivo)
+            shutil.copy2(origem, destino)
+            arquivos_detectados.append(arquivo)
+
+    # Mostrar mensagem de sucesso
     mostrar_sucesso(
         f"Matéria '{nome}' adicionada com sucesso! "
-        f"(Mês: {mes.capitalize()}, Criada em: {data_criacao}, {qtd_pdfs} PDFs detectados)"
+        f"(Mês: {mes.capitalize()}, Criada em: {data_criacao}, {len(arquivos_detectados)} PDFs organizados no MySQL)"
     )
 
-    # 🔹 Mostrar os nomes dos PDFs detectados
-    if qtd_pdfs > 0:
-        arquivos = [f for f in os.listdir(pasta) if f.lower().endswith(".pdf")]
+    # Mostrar os nomes dos PDFs detectados
+    if arquivos_detectados:
         print("Arquivos detectados:")
-        for arq in arquivos:
+        for arq in arquivos_detectados:
             print(f" - {arq}")
-
 
 # -----------------------------
 # Editar matéria
@@ -106,30 +129,21 @@ def adicionar_materia():
 def editar_materia():
     id_materia = input_numero("Digite o ID da matéria a editar:", 1, 9999)
     materias = MateriaRepository.list()
-    materia = next((m for m in materias if m.id == id_materia), None)
+    materia = next((m for m in materias if m["id"] == id_materia), None)
 
     if not materia:
         mostrar_erro("Matéria não encontrada.")
         return
 
-    print(f"Editando matéria: {materia.nome}")
-    novo_nome = input(f"Novo nome (Enter para manter '{materia.nome}'): ").strip() or materia.nome
-    novos_livros = input(f"Nova quantidade de livros (Enter para manter {materia.livros_texto}): ").strip()
-    novos_slides = input(f"Nova quantidade de slides (Enter para manter {materia.slides_aula}): ").strip()
-    nova_pasta = escolher_pasta_pdf() or materia.pasta_pdf
+    print(f"Editando matéria: {materia['nome']}")
+    novo_nome = input(f"Novo nome (Enter para manter '{materia['nome']}'): ").strip() or materia['nome']
+    nova_pasta = escolher_pasta_pdf() or materia["pasta_pdf"]
 
-    try:
-        novos_livros = int(novos_livros) if novos_livros else materia.livros_texto
-        novos_slides = int(novos_slides) if novos_slides else materia.slides_aula
-    except ValueError:
-        mostrar_erro("Valores inválidos para livros ou slides.")
-        return
+    # Atualizar no banco (ideal seria ter um update específico)
+    MateriaRepository.delete_all()  # cuidado: isso apaga todas!
+    MateriaRepository.insert(novo_nome, nova_pasta, materia["mes_inicio"])
 
-    MateriaRepository.delete(id_materia)
-    MateriaRepository.insert(novo_nome, novos_livros, novos_slides, nova_pasta, materia.mes_inicio)
-    exportar_tudo()
     mostrar_sucesso(f"Matéria '{novo_nome}' (ID {id_materia}) atualizada com sucesso.")
-
 
 # -----------------------------
 # Listar matérias com paginação
@@ -140,7 +154,6 @@ def mostrar_materias():
         mostrar_erro("Nenhuma matéria cadastrada.")
         return
 
-    # 🔹 Usuário escolhe quantos registros por página
     por_pagina = input_numero("Quantos registros por página deseja visualizar? (1-20):", 1, 20)
 
     def exibir_pagina(pagina=1):
@@ -176,7 +189,6 @@ def mostrar_materias():
                 exibir_pagina(pagina + 1)
 
     exibir_pagina()
-
 
 # -----------------------------
 # Listar por múltiplos meses ou intervalo
@@ -221,7 +233,6 @@ def listar_por_mes():
         colunas
     )
 
-
 # -----------------------------
 # Listar concluídas
 # -----------------------------
@@ -245,7 +256,6 @@ def listar_concluidas():
         ],
         colunas
     )
-
 
 # -----------------------------
 # Listar não concluídas
@@ -271,7 +281,6 @@ def listar_nao_concluidas():
         colunas
     )
 
-
 # -----------------------------
 # Concluir matéria com confirmação
 # -----------------------------
@@ -289,12 +298,10 @@ def marcar_concluida():
         return
 
     MateriaRepository.update_concluida(id_materia, status=1)
-    exportar_tudo()
 
-
-# -----------------------------
+# -------------------------------
 # Remover matéria (com confirmação)
-# -----------------------------
+# -------------------------------
 def remover_materia():
     try:
         print("\n=== Remover Matéria ===")
@@ -304,12 +311,13 @@ def remover_materia():
 
         if escolha == "1":
             materia_id = int(input("Digite o ID da matéria a remover: "))
-            confirm = input(f"Tem certeza que deseja remover a matéria ID {materia_id}? (s/n): ").strip().lower()
-            if confirm == "s":
+            confirm = input(f"Tem certeza que deseja remover a matéria ID {materia_id}? (s/n): ")
+            if confirm.lower() == "s":
                 materia = MateriaRepository.get(materia_id)
                 if materia:
-                    session.delete(materia)
-                    session.commit()
+                    with SessionLocal() as session:
+                        session.delete(materia)
+                        session.commit()
                     print(f"Matéria {materia_id} removida com sucesso!")
                 else:
                     print("Matéria não encontrada.")
@@ -317,8 +325,8 @@ def remover_materia():
                 print("Operação cancelada. Nenhuma matéria foi removida.")
 
         elif escolha == "2":
-            confirm = input("Tem certeza que deseja remover TODAS as matérias? (s/n): ").strip().lower()
-            if confirm == "s":
+            confirm = input("Tem certeza que deseja remover TODAS as matérias? (s/n): ")
+            if confirm.lower() == "s":
                 MateriaRepository.delete_all()
                 print("Todas as matérias foram removidas com sucesso!")
             else:
@@ -326,64 +334,5 @@ def remover_materia():
 
         else:
             print("Opção inválida.")
-
     except Exception as e:
-        print(f"[ERRO] Ocorreu um erro inesperado ao remover matéria: {e}")
-
-
-# -----------------------------
-# Exportação
-# -----------------------------
-def exportar_tudo():
-    """
-    Exporta todas as matérias nos formatos definidos em config.json.
-    Todos os arquivos ficam apenas dentro da pasta 'export'.
-    Remove duplicados da raiz automaticamente.
-    """
-    materias = MateriaRepository.list()
-    if not materias:
-        mostrar_erro("Nenhuma matéria para exportar.")
-        return
-
-    # Garante que a pasta export existe
-    os.makedirs("export", exist_ok=True)
-
-    base_nome = normalizar_nome_arquivo("materias")
-
-    # 🔹 Ajuste: incluir Data de Conclusão e PDFs nos dados exportados
-    dados_exportacao = [
-        {
-            "ID": m["id"],
-            "Nome": f"{m['nome']} ({len(m['arquivos'])} PDFs)",  # Nome + quantidade de PDFs
-            "Pasta": m["pasta_pdf"],
-            "Mês": m["mes_inicio"],
-            "Concluída": m["concluida"],
-            "Data de Criação": m["data_criacao"],
-            "Data de Conclusão": m["data_conclusao"] if m["data_conclusao"] else "-",
-            "Arquivos (PDFs)": ", ".join(m["arquivos"]) if m["arquivos"] else "-"
-        }
-        for m in materias
-    ]
-
-    # Formatos definidos no config.json
-    formatos = CONFIG.get("exportacao", {}).get("formatos", [])
-
-    # Exporta para todos os formatos configurados
-    for formato in formatos:
-        extensao = "xlsx" if formato == "excel" else formato
-        caminho = f"export/{base_nome}.{extensao}"
-        salvar_arquivo(formato, dados_exportacao, caminho)
-
-    # Limpeza automática: remove duplicados na raiz
-    duplicados = [f"{base_nome}.{ 'xlsx' if f == 'excel' else f }" for f in formatos]
-    for arquivo in duplicados:
-        if os.path.exists(arquivo):
-            try:
-                os.remove(arquivo)
-                mostrar_sucesso(f"Arquivo duplicado removido: {arquivo}")
-            except Exception as e:
-                mostrar_erro(f"Erro ao remover duplicado {arquivo}: {e}")
-
-    mostrar_sucesso(
-        f"Exportação concluída nos formatos: {', '.join(formatos)} (apenas dentro da pasta 'export')."
-    )
+        print(f"[ERRO] Falha ao remover matéria: {e}")

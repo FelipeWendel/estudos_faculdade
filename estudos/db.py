@@ -1,8 +1,5 @@
 import os
-from pathlib import Path
 from datetime import datetime
-import csv
-import json
 
 from sqlalchemy import (
     create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Index
@@ -21,10 +18,9 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 Base = declarative_base()
 
-
-# --------------------------
+# -----------------------------
 # Modelo de tabelas
-# --------------------------
+# -----------------------------
 class Materia(Base):
     __tablename__ = "materias"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -35,7 +31,6 @@ class Materia(Base):
     data_criacao = Column(DateTime, default=datetime.now, nullable=False)
     data_conclusao = Column(DateTime, nullable=True)
 
-    # relação com arquivos
     arquivos = relationship("ArquivoMateria", back_populates="materia", cascade="all, delete-orphan")
 
 
@@ -43,16 +38,14 @@ class ArquivoMateria(Base):
     __tablename__ = "arquivos_materia"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    materia_id = Column(Integer, ForeignKey("materias.id"), nullable=False)
+    materia_id = Column(Integer, ForeignKey("materias.id", ondelete="CASCADE"), nullable=False)
     nome_arquivo = Column(String(255), nullable=False)
 
     materia = relationship("Materia", back_populates="arquivos")
 
-
 # Índices adicionais
 Index("idx_mes_inicio", Materia.mes_inicio)
 Index("idx_concluida", Materia.concluida)
-
 
 # -----------------------------
 # Inicialização e migrations
@@ -74,13 +67,13 @@ def migrate_db():
     except Exception as e:
         registrar_log(f"Erro ao aplicar migration: {e}", tipo="ERRO", funcao="migrate_db")
 
-
 # -----------------------------
 # Camada de repositório
 # -----------------------------
 class MateriaRepository:
     @staticmethod
     def insert(nome: str, pasta: str, mes: str):
+        """Insere uma nova matéria e registra os PDFs encontrados na pasta."""
         if not nome.strip():
             raise ValueError("Nome da matéria não pode ser vazio.")
         if not pasta.strip():
@@ -99,7 +92,6 @@ class MateriaRepository:
                 session.add(materia)
                 session.commit()
 
-                # 🔹 identificar PDFs na pasta
                 arquivos_pdf = [f for f in os.listdir(pasta) if f.lower().endswith(".pdf")]
                 for arquivo in arquivos_pdf:
                     registro = ArquivoMateria(materia_id=materia.id, nome_arquivo=arquivo)
@@ -116,6 +108,7 @@ class MateriaRepository:
 
     @staticmethod
     def list(concluidas: int | None = None):
+        """Lista matérias, opcionalmente filtrando por concluídas."""
         try:
             with SessionLocal() as session:
                 if concluidas is None:
@@ -147,23 +140,20 @@ class MateriaRepository:
         """Busca uma matéria pelo ID"""
         try:
             with SessionLocal() as session:
-                materia = session.query(Materia).filter(Materia.id == id_materia).first()
-                return materia
+                return session.query(Materia).filter(Materia.id == id_materia).first()
         except Exception as e:
             registrar_log(f"Erro ao buscar matéria ID {id_materia}: {e}", tipo="ERRO", funcao="get")
             return None
 
     @staticmethod
     def update_concluida(id_materia: int, status: int = 1):
+        """Atualiza status de conclusão da matéria"""
         try:
             with SessionLocal() as session:
                 materia = session.query(Materia).filter(Materia.id == id_materia).first()
                 if materia:
                     materia.concluida = bool(status)
-                    if status == 1:
-                        materia.data_conclusao = datetime.now()
-                    else:
-                        materia.data_conclusao = None
+                    materia.data_conclusao = datetime.now() if status == 1 else None
                     session.commit()
                     registrar_log(f"Matéria ID {id_materia} atualizada para concluída={status}", funcao="update_concluida")
                     mostrar_sucesso(
@@ -176,11 +166,12 @@ class MateriaRepository:
 
     @staticmethod
     def delete_all():
+        """Remove todas as matérias"""
         try:
             with SessionLocal() as session:
                 materias = session.query(Materia).all()
                 for m in materias:
-                    session.delete(m)  # respeita o cascade
+                    session.delete(m)
                 session.commit()
                 registrar_log("Todas as matérias removidas.", funcao="delete_all")
         except Exception as e:
@@ -188,114 +179,14 @@ class MateriaRepository:
 
     @staticmethod
     def buscar_por_mes(mes: str):
+        """Busca matérias por mês"""
         with SessionLocal() as session:
             return session.query(Materia).filter(Materia.mes_inicio == mes).all()
 
     @staticmethod
     def buscar_por_periodo(inicio: datetime, fim: datetime):
+        """Busca matérias por intervalo de datas"""
         with SessionLocal() as session:
             return session.query(Materia).filter(
                 Materia.data_criacao.between(inicio, fim)
             ).all()
-
-
-# -----------------------------
-# Exportação completa (CSV, JSON, TXT, MD, PDF, XLSX)
-# -----------------------------
-def exportar_tudo():
-    try:
-        materias = MateriaRepository.list()
-        if not materias:
-            mostrar_erro("Nenhuma matéria encontrada para exportação.")
-            return
-
-        os.makedirs("export", exist_ok=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-
-        # CSV
-        destino_csv = Path("export") / "materias.csv"
-        with open(destino_csv, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=materias[0].keys())
-            writer.writeheader()
-            writer.writerows(materias)
-
-        # JSON
-        destino_json = Path("export") / "materias.json"
-        with open(destino_json, "w", encoding="utf-8") as f:
-            json.dump(materias, f, ensure_ascii=False, indent=4)
-
-        # TXT
-        destino_txt = Path("export") / "materias.txt"
-        with open(destino_txt, "w", encoding="utf-8") as f:
-            for m in materias:
-                f.write(
-                    f"ID: {m['id']} | Nome: {m['nome']} | Pasta: {m['pasta_pdf']} | "
-                    f"Mês: {m['mes_inicio']} | Concluída: {m['concluida']}\n"
-                    f"Data de Criação: {m['data_criacao']} | Data de Conclusão: {m['data_conclusao']}\n"
-                    f"Arquivos: {', '.join(m['arquivos']) if m['arquivos'] else '-'}\n"
-                    "------------------------------------------------------------\n"
-                )
-
-        # MD (Markdown)
-        destino_md = Path("export") / "materias.md"
-        with open(destino_md, "w", encoding="utf-8") as f:
-            f.write("| ID | Nome | Pasta | Mês | Concluída | Data Criação | Data Conclusão | Arquivos (PDFs) |\n")
-            f.write("| --- | --- | --- | --- | --- | --- | --- | --- |\n")
-            for m in materias:
-                arquivos = "; ".join(m["arquivos"]) if m["arquivos"] else "-"
-                f.write(
-                    f"| {m['id']} | {m['nome']} | {m['pasta_pdf']} | {m['mes_inicio']} | "
-                    f"{m['concluida']} | {m['data_criacao']} | {m['data_conclusao']} | {arquivos} |\n"
-                )
-
-        # PDF
-        try:
-            from fpdf import FPDF
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            pdf.cell(200, 10, txt=f"Relatório de Matérias - {timestamp}", ln=True, align="C")
-            for m in materias:
-                pdf.multi_cell(0, 10,
-                    f"ID: {m['id']} | Nome: {m['nome']} | Pasta: {m['pasta_pdf']} | "
-                    f"Mês: {m['mes_inicio']} | Concluída: {m['concluida']}\n"
-                    f"Data de Criação: {m['data_criacao']} | Data de Conclusão: {m['data_conclusao']}\n"
-                    f"Arquivos: {', '.join(m['arquivos']) if m['arquivos'] else '-'}\n"
-                    "------------------------------------------------------------\n"
-                )
-            pdf.output(str(Path("export") / "materias.pdf"))
-        except ImportError:
-            mostrar_erro("Biblioteca fpdf não instalada. Instale com: pip install fpdf")
-
-        # XLSX
-        try:
-            import openpyxl
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.append(list(materias[0].keys()))
-            for m in materias:
-                # garantir que todos os valores sejam strings
-                ws.append([str(v) if v is not None else "" for v in m.values()])
-            wb.save(str(Path("export") / "materias.xlsx"))
-        except ImportError:
-            mostrar_erro("Biblioteca openpyxl não instalada. Instale com: pip install openpyxl")
-
-        mostrar_sucesso("Exportação concluída nos formatos: csv, json, txt, md, pdf, xlsx (pasta 'export').")
-
-    except Exception as e:
-        registrar_log(f"Erro ao exportar matérias: {e}", tipo="ERRO", funcao="exportar_tudo")
-        mostrar_erro("Falha ao exportar matérias.")
-
-
-# -----------------------------
-# Sessão global (para importação direta)
-# -----------------------------
-
-# 🔹 Limpa qualquer metadado antigo que possa estar em cache
-Base.metadata.clear()
-
-# 🔹 Recria todas as tabelas conforme o modelo atual
-Base.metadata.create_all(bind=engine)
-
-# 🔹 Cria uma sessão global para importação direta
-session = SessionLocal()
