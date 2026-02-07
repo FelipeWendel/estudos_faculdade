@@ -124,6 +124,4 @@ Entrada: 8 → Escolha: 1 → ID: 5
 v1.2.0
 
 👨‍💻 Autor
-Projeto desenvolvido por Felipe Cruz Ayres para organização dos estudos da faculdade.
-
----
+Projeto desenvolvido por Felipe Wendel Cruz Ayres para organização dos estudos da faculdade.
