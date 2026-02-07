@@ -1,20 +1,23 @@
 {
   "idioma": "pt",
 
-  "mensagens": {
-    "sucesso": "Operação realizada com sucesso!",
-    "erro": "Ocorreu um erro inesperado.",
-    "aviso": "Atenção: verifique os dados informados.",
-    "confirmacao": "Deseja confirmar esta ação crítica?",
-    "nenhum_dado": "Nenhum dado para exibir.",
-    "entrada_invalida": "Entrada inválida. Digite apenas números.",
-    "fora_intervalo": "Digite um número entre {min} e {max}."
+  "mensagens_menu": {
+    "menu_title": "=== Menu Principal ===",
+    "choice": "Digite sua escolha (número ou letra): ",
+    "invalid": "Opção inválida."
   },
 
-  "log": {
-    "nivel": "INFO",
-    "arquivo": "logs/sistema.log",
-    "max_size": 1048576
+  "menu_opcoes": {
+    "1": ["add", "A"],
+    "2": ["show", "M"],
+    "3": ["list_month", "L"],
+    "4": ["list_done", "C"],
+    "5": ["list_pending", "P"],
+    "6": ["mark_done", "D"],
+    "7": ["edit", "E"],
+    "8": ["remove", "R"],
+    "0": ["exit", "S"],
+    "H": ["help", "H"]
   },
 
   "paginacao": {

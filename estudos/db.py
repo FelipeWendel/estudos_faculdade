@@ -1,20 +1,31 @@
 import os
 from datetime import datetime
-
 from sqlalchemy import (
     create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, Index
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from utils import carregar_config, registrar_log, mostrar_erro, mostrar_sucesso
+from utils import registrar_log, mostrar_erro, mostrar_sucesso, carregar_config
 
-from utils import registrar_log, mostrar_erro, mostrar_sucesso
-
-# -----------------------------
+# ------------------------------
 # Configuração do banco
-# -----------------------------
-DATABASE_URL = "mysql+pymysql://felipe:CruzAyres2004@localhost/estudos_faculdade"
+# ------------------------------
+config = carregar_config()   # <-- inicializa o config
 
-engine = create_engine(DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+DATABASE_URL = config.get("database", {}).get("url")
+if not DATABASE_URL:
+    mostrar_erro("Configuração de banco não encontrada no config.json")
+    raise KeyError("Configuração de banco ausente")
+
+try:
+    engine = create_engine(DATABASE_URL, echo=False, future=True)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    registrar_log(f"Conectado ao banco: {DATABASE_URL}", funcao="db_init")
+    print(f"✅ Conectado ao banco: {DATABASE_URL}")
+except Exception as e:
+    mostrar_erro(f"Erro ao conectar ao banco: {e}")
+    registrar_log(f"Erro ao conectar ao banco: {e}", tipo="ERRO", funcao="db_init")
+    raise
 
 Base = declarative_base()
 
@@ -36,7 +47,6 @@ class Materia(Base):
 
 class ArquivoMateria(Base):
     __tablename__ = "arquivos_materia"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     materia_id = Column(Integer, ForeignKey("materias.id", ondelete="CASCADE"), nullable=False)
     nome_arquivo = Column(String(255), nullable=False)
@@ -54,10 +64,10 @@ def init_db():
     """Inicializa o banco de dados e cria tabelas/índices."""
     try:
         Base.metadata.create_all(bind=engine)
-        registrar_log("Banco MySQL inicializado com SQLAlchemy.", funcao="init_db")
+        registrar_log("Banco inicializado com SQLAlchemy.", funcao="init_db")
     except Exception as e:
         registrar_log(f"Erro ao inicializar banco: {e}", tipo="ERRO", funcao="init_db")
-
+        mostrar_erro(f"Erro ao inicializar banco: {e}")
 
 def migrate_db():
     """Exemplo simples de migration (ideal usar Alembic)."""
@@ -66,6 +76,7 @@ def migrate_db():
         registrar_log("Migration aplicada (via SQLAlchemy).", funcao="migrate_db")
     except Exception as e:
         registrar_log(f"Erro ao aplicar migration: {e}", tipo="ERRO", funcao="migrate_db")
+        mostrar_erro(f"Erro ao aplicar migration: {e}")
 
 # -----------------------------
 # Camada de repositório
@@ -100,11 +111,12 @@ class MateriaRepository:
                 session.commit()
 
                 registrar_log(f"Matéria inserida: {nome} com {len(arquivos_pdf)} PDFs", funcao="insert")
-                return len(arquivos_pdf)
+                mostrar_sucesso(f"Matéria '{nome}' inserida com sucesso no banco!")
+                return materia.id
         except Exception as e:
             registrar_log(f"Erro ao inserir matéria {nome}: {e}", tipo="ERRO", funcao="insert")
             mostrar_erro(f"Erro ao inserir matéria: {e}")
-            return 0
+            return None
 
     @staticmethod
     def list(concluidas: int | None = None):
@@ -133,6 +145,7 @@ class MateriaRepository:
                 return resultado
         except Exception as e:
             registrar_log(f"Erro ao listar matérias: {e}", tipo="ERRO", funcao="list")
+            mostrar_erro(f"Erro ao listar matérias: {e}")
             return []
 
     @staticmethod
@@ -143,6 +156,7 @@ class MateriaRepository:
                 return session.query(Materia).filter(Materia.id == id_materia).first()
         except Exception as e:
             registrar_log(f"Erro ao buscar matéria ID {id_materia}: {e}", tipo="ERRO", funcao="get")
+            mostrar_erro(f"Erro ao buscar matéria: {e}")
             return None
 
     @staticmethod
@@ -174,19 +188,90 @@ class MateriaRepository:
                     session.delete(m)
                 session.commit()
                 registrar_log("Todas as matérias removidas.", funcao="delete_all")
+                mostrar_sucesso("Todas as matérias foram removidas com sucesso!")
         except Exception as e:
             registrar_log(f"Erro ao remover todas as matérias: {e}", tipo="ERRO", funcao="delete_all")
+            mostrar_erro(f"Erro ao remover todas as matérias: {e}")
+
+    @staticmethod
+    def delete_obj(obj):
+        """Remove um objeto específico"""
+        try:
+            with SessionLocal() as session:
+                session.delete(obj)
+                session.commit()
+                registrar_log(f"Objeto {obj} removido com sucesso.", funcao="delete_obj")
+                return True
+        except Exception as e:
+            registrar_log(f"Erro ao remover objeto: {e}", tipo="ERRO", funcao="delete_obj")
+            mostrar_erro(f"Erro ao remover objeto: {e}")
+            return False
 
     @staticmethod
     def buscar_por_mes(mes: str):
         """Busca matérias por mês"""
-        with SessionLocal() as session:
-            return session.query(Materia).filter(Materia.mes_inicio == mes).all()
+        try:
+            with SessionLocal() as session:
+                return session.query(Materia).filter(Materia.mes_inicio == mes).all()
+        except Exception as e:
+            registrar_log(f"Erro ao buscar matérias por mês: {e}", tipo="ERRO", funcao="buscar_por_mes")
+            mostrar_erro(f"Erro ao buscar matérias por mês: {e}")
+            return []
 
     @staticmethod
     def buscar_por_periodo(inicio: datetime, fim: datetime):
         """Busca matérias por intervalo de datas"""
-        with SessionLocal() as session:
-            return session.query(Materia).filter(
-                Materia.data_criacao.between(inicio, fim)
-            ).all()
+        try:
+            with SessionLocal() as session:
+                return session.query(Materia).filter(
+                    Materia.data_criacao.between(inicio, fim)
+                ).all()
+        except Exception as e:
+            registrar_log(f"Erro ao buscar matérias por período: {e}", tipo="ERRO", funcao="buscar_por_periodo")
+            mostrar_erro(f"Erro ao buscar matérias por período: {e}")
+            return []
+
+    # -----------------------------
+    # Métodos genéricos de CRUD
+    # -----------------------------
+    @staticmethod
+    def insert_obj(obj):
+        """Insere qualquer objeto no banco"""
+        try:
+            with SessionLocal() as session:
+                session.add(obj)
+                session.commit()
+                registrar_log(f"Objeto {obj} inserido com sucesso.", funcao="insert_obj")
+                return obj
+        except Exception as e:
+            registrar_log(f"Erro ao inserir objeto: {e}", tipo="ERRO", funcao="insert_obj")
+            mostrar_erro(f"Erro ao inserir objeto: {e}")
+            return None
+
+    @staticmethod
+    def update_obj(obj):
+        """Atualiza qualquer objeto no banco"""
+        try:
+            with SessionLocal() as session:
+                session.merge(obj)
+                session.commit()
+                registrar_log(f"Objeto {obj} atualizado com sucesso.", funcao="update_obj")
+                return obj
+        except Exception as e:
+            registrar_log(f"Erro ao atualizar objeto: {e}", tipo="ERRO", funcao="update_obj")
+            mostrar_erro(f"Erro ao atualizar objeto: {e}")
+            return None
+
+    @staticmethod
+    def delete_obj(obj):
+        """Remove qualquer objeto do banco"""
+        try:
+            with SessionLocal() as session:
+                session.delete(obj)
+                session.commit()
+                registrar_log(f"Objeto {obj} removido com sucesso.", funcao="delete_obj")
+                return True
+        except Exception as e:
+            registrar_log(f"Erro ao remover objeto: {e}", tipo="ERRO", funcao="delete_obj")
+            mostrar_erro(f"Erro ao remover objeto: {e}")
+            return False

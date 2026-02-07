@@ -1,49 +1,38 @@
 import sys
 import argparse
-from db import Base, engine
 
-# Garante que as tabelas sejam criadas no banco (MySQL via SQLAlchemy)
+# Banco de dados
+from db import Base, engine, init_db
+
+# Utilitários
+from utils import carregar_config, registrar_log, mostrar_erro, mostrar_sucesso
+
+# Menu
+from menu import exibir_menu, MSG, interpretar_escolha, mostrar_ajuda
+
+# Operações com matérias
+from materias import (
+    adicionar_materia,
+    mostrar_materias,
+    listar_por_mes,
+    listar_concluidas,
+    listar_nao_concluidas,
+    marcar_concluida,
+    remover_materia,
+    editar_materia
+)
+
+VERSION = "1.2.0"
+
+# Garante que as tabelas sejam criadas no banco
 Base.metadata.create_all(bind=engine)
-
-try:
-    # Modo pacote
-    from materias import (
-        adicionar_materia,
-        mostrar_materias,
-        listar_por_mes,
-        listar_concluidas,
-        listar_nao_concluidas,
-        marcar_concluida,
-        remover_materia,
-        editar_materia
-    )
-    from utils import mostrar_erro, input_numero, registrar_log, mostrar_sucesso
-    from menu import exibir_menu, MSG, interpretar_escolha, mostrar_ajuda
-    from db import init_db
-except ImportError:
-    # Modo script isolado (fallback)
-    from materias import (
-        adicionar_materia,
-        mostrar_materias,
-        listar_por_mes,
-        listar_concluidas,
-        listar_nao_concluidas,
-        marcar_concluida,
-        remover_materia,
-        editar_materia
-    )
-    from utils import mostrar_erro, input_numero, registrar_log, mostrar_sucesso
-    from menu import exibir_menu, MSG, interpretar_escolha, mostrar_ajuda
-    from db import init_db
-
-VERSION = "1.1.0"
 
 
 def main():
     """
     Controla o fluxo principal do programa:
     - Exibe menu
-    - Lê entrada do usuário (número ou letra)
+    - Lê entrada do usuário
     - Executa a ação correspondente
     """
 
@@ -58,32 +47,42 @@ def main():
         try:
             exibir_menu()
             escolha = input(MSG["choice"]).strip()
-
             acao = interpretar_escolha(escolha)
 
-            if acao == "add":
-                adicionar_materia()
-            elif acao == "show":
-                mostrar_materias()
-            elif acao == "list_month":
-                listar_por_mes()
-            elif acao == "list_done":
-                listar_concluidas()
-            elif acao == "list_pending":
-                listar_nao_concluidas()
-            elif acao == "mark_done":
-                marcar_concluida()
-            elif acao == "edit":
-                editar_materia()
-            elif acao == "remove":
-                remover_materia()
-            elif acao == "exit":
-                print("\033[91mSaindo...\033[0m")
-                break
-            elif acao == "help":
-                mostrar_ajuda()
-            else:
-                mostrar_erro(MSG["invalid"])
+            # 🔹 Loop principal mais limpo com match/case
+            match acao:
+                case "add":
+                    adicionar_materia()
+                    registrar_log("Matéria adicionada pelo usuário.", funcao="main")
+                case "show":
+                    mostrar_materias()
+                    registrar_log("Listagem de matérias exibida.", funcao="main")
+                case "list_month":
+                    listar_por_mes()
+                    registrar_log("Listagem de matérias por mês exibida.", funcao="main")
+                case "list_done":
+                    listar_concluidas()
+                    registrar_log("Listagem de matérias concluídas exibida.", funcao="main")
+                case "list_pending":
+                    listar_nao_concluidas()
+                    registrar_log("Listagem de matérias não concluídas exibida.", funcao="main")
+                case "mark_done":
+                    marcar_concluida()
+                    registrar_log("Matéria marcada como concluída.", funcao="main")
+                case "edit":
+                    editar_materia()
+                    registrar_log("Matéria editada.", funcao="main")
+                case "remove":
+                    remover_materia()
+                    registrar_log("Matéria removida.", funcao="main")
+                case "exit":
+                    mostrar_sucesso("Saindo do sistema...")
+                    break
+                case "help":
+                    mostrar_ajuda()   # ✅ Agora exibe a versão detalhada da ajuda
+                    registrar_log("Ajuda detalhada exibida.", funcao="main")
+                case _:
+                    mostrar_erro(MSG["invalid"])
 
         except Exception as e:
             # 🔹 Tratamento global de exceções
@@ -103,9 +102,11 @@ def cli():
     parser.add_argument("--adicionar", action="store_true", help="Adicionar uma nova matéria")
     parser.add_argument("--concluidas", action="store_true", help="Listar matérias concluídas")
     parser.add_argument("--nao-concluidas", action="store_true", help="Listar matérias não concluídas")
+    parser.add_argument("--ajuda", action="store_true", help="Exibir ajuda detalhada")
 
     args = parser.parse_args()
 
+    # ✅ Inicializa o banco antes de qualquer operação
     init_db()
 
     if args.listar:
@@ -116,6 +117,8 @@ def cli():
         listar_concluidas()
     elif args.nao_concluidas:
         listar_nao_concluidas()
+    elif args.ajuda:
+        mostrar_ajuda()   # ✅ Também disponível via CLI
     else:
         # Se não passar argumentos, roda o fluxo normal (menu interativo)
         main()

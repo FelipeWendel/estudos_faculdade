@@ -1,59 +1,129 @@
-📚 O que é esse programa
-É um sistema de organização de matérias acadêmicas feito em Python. Ele ajuda a gerenciar disciplinas da faculdade, organizar PDFs relacionados, acompanhar status (concluída ou não concluída), e manter tudo centralizado em um banco de dados.
-A ideia é transformar a bagunça de arquivos soltos em uma estrutura organizada, com relatórios e um menu interativo no terminal.
+# 📚 Sistema de Estudos Faculdade
 
-🚀 Principais funcionalidades
-• 	Cadastro de matérias: adiciona uma disciplina com nome, mês de início e pasta de PDFs.
-• 	Organização automática: cria pastas estruturadas por mês e matéria, copiando os PDFs para lá.
-• 	Listagem completa: mostra todas as matérias cadastradas, com paginação e detalhes (nome, mês, status, PDFs).
-• 	Filtros inteligentes:
-• 	Listar por mês (único, múltiplos ou intervalo).
-• 	Listar concluídas.
-• 	Listar não concluídas.
-• 	Gestão de status: marcar matérias como concluídas ou editar dados (nome/pasta).
-• 	Remoção segura: excluir uma matéria específica ou todas de uma vez, sempre com confirmação.
-• 	Ajuda detalhada: guia embutido que explica cada opção do menu e como usar.
+Um sistema em Python para **organizar, gerenciar e acompanhar matérias da faculdade**, com suporte a banco de dados, interface de menu interativo e mensagens coloridas para melhor usabilidade.
 
-🛠️ Estrutura técnica
-• 	Banco de dados: SQLAlchemy (suporte a SQLite e MySQL).
-• 	Interface: menu no terminal com cores (via Colorama).
-• 	Seleção de pastas: Tkinter abre o explorador de arquivos para escolher PDFs.
-• 	Logs: sistema de log com rotação automática para não crescer indefinidamente.
-• 	Validações: inputs numéricos, datas, nomes de arquivos normalizados.
-• 	Testes automatizados: suíte completa com Pytest cobrindo todas as funções principais.
+---
 
-📂 Estrutura de arquivos
+## 🚀 Funcionalidades
+
+- **Adicionar matéria**: cadastra uma nova disciplina, vinculando nome, pasta de PDFs e mês de início.
+- **Mostrar matérias**: lista todas as matérias cadastradas com paginação.
+- **Listar por mês**: filtra matérias por meses específicos ou intervalos.
+- **Listar concluídas**: exibe apenas matérias já finalizadas.
+- **Listar pendentes**: mostra matérias ainda em andamento.
+- **Marcar como concluída**: altera o status de uma matéria.
+- **Editar matéria**: permite atualizar nome ou pasta de PDFs.
+- **Remover matéria**: remove uma matéria específica ou todas de uma vez.
+- **Ajuda detalhada**: guia completo com exemplos práticos.
+- **Logs coloridos**: registra ações e erros com cores padronizadas.
+- **Internacionalização (i18n)**: suporte a português, inglês e espanhol.
+
+---
+
+## 🛠️ Ferramentas utilizadas
+
+- **Python 3.14.2** → linguagem principal.
+- **SQLAlchemy** → ORM para integração com banco de dados.
+- **MySQL + PyMySQL** → banco de dados principal.
+- **Colorama** → cores no terminal (sucesso em verde, erro em vermelho, aviso em amarelo).
+- **Tkinter** → suporte para seleção de pastas/arquivos via interface gráfica.
+- **Argparse** → interface de linha de comando (CLI).
+- **JSON** → configuração centralizada (`config.json`).
+
+---
+
+## 📂 Estrutura do projeto
+
+
+estudos_faculdade/ │ ├── estudos/ │   ├── main.py          # Fluxo principal do programa │   ├── menu.py          # Menu interativo com cores e ajuda detalhada │   ├── materias.py      # Operações CRUD de matérias │   ├── utils.py         # Funções utilitárias (logs, mensagens, validações) │   ├── db.py            # Configuração e acesso ao banco de dados │   └── config.json      # Configuração centralizada (idioma, menu, DB, paginação)
+
+---
+
+## ⚙️ Configuração
+
+O arquivo `config.json` centraliza todas as opções:
+
+```json
+{
+  "idioma": "pt",
+  "mensagens_menu": {
+    "menu_title": "=== Menu Principal ===",
+    "choice": "Digite sua escolha (número ou letra): ",
+    "invalid": "Opção inválida."
+  },
+  "menu_opcoes": {
+    "1": ["add", "A"],
+    "2": ["show", "M"],
+    "3": ["list_month", "L"],
+    "4": ["list_done", "C"],
+    "5": ["list_pending", "P"],
+    "6": ["mark_done", "D"],
+    "7": ["edit", "E"],
+    "8": ["remove", "R"],
+    "0": ["exit", "S"],
+    "H": ["help", "H"]
+  },
+  "paginacao": {
+    "por_pagina": 5,
+    "maximo": 20
+  },
+  "database": {
+    "tipo": "mysql",
+    "url": "mysql+pymysql://usuario:senha@localhost/estudos_faculdade",
+    "test_url": "sqlite:///:memory:"
+  }
+}
 
 
-▶️ Como usar
-1. 	Instale dependências:
 
-1. 	(Tkinter já vem com Python.)
-2. 	Configure o banco em  (SQLite por padrão, pode trocar para MySQL).
-3. 	Execute o sistema:
+🎨 Padrão visual
+- 🔹 Azul → opções normais
+- 🟢 Verde → ajuda (suporte)
+- 🔴 Vermelho → sair (encerramento)
+- ✅ Sucesso → verde
+- ❌ Erro → vermelho
+- ⚠️ Aviso → amarelo
 
-4. 	Use o menu para navegar:
-
-
-🧪 Testes
-• 	Arquivo  cobre:
-• 	Inserção e listagem.
-• 	Atualização de status.
-• 	Remoção.
-• 	Erros de input (nome vazio, pasta inválida, mês inválido).
-• 	Mostrar matérias.
-• 	Listar por mês.
-• 	Listar concluídas e não concluídas.
-• 	Marcar concluída (interativo).
-• 	Remover matéria (interativo).
-Rodar testes:
-
-Rodar com cobertura:
+▶️ Como executar
+1. Instale dependências
+pip install sqlalchemy pymysql colorama
 
 
-🎯 Diferenciais
-• 	Organização automática de PDFs por mês e matéria.
-• 	Banco de dados robusto para persistência.
-• 	Menu interativo com ajuda detalhada (manual embutido).
-• 	Testes automatizados garantindo confiabilidade.
-• 	Mensagens coloridas e amigáveis no terminal.
+2. Configure o banco
+- Crie o banco estudos_faculdade no MySQL.
+- Ajuste url no config.json com seu usuário e senha.
+3. Execute o sistema
+python main.py
+
+
+4. Usar via CLI
+python main.py --listar
+python main.py --adicionar
+python main.py --concluidas
+python main.py --nao-concluidas
+python main.py --ajuda
+
+
+
+📖 Exemplos práticos
+- Adicionar matéria
+Entrada: 1 → Nome: Matemática → Pasta: C:\Users\Felipe\Docs\PDFs → Mês: Março
+- Listar por mês
+Entrada: 3 → Intervalo: março-junho
+- Remover matéria
+Entrada: 8 → Escolha: 1 → ID: 5
+
+🧩 Diferenciais
+- Configuração centralizada (config.json)
+- Internacionalização (pt, en, es)
+- Logs coloridos com timestamp
+- Ajuda detalhada com exemplos práticos
+- Menu interativo com cores e legenda
+
+📌 Versão
+v1.2.0
+
+👨‍💻 Autor
+Projeto desenvolvido por Felipe Cruz Ayres para organização dos estudos da faculdade.
+
+---
